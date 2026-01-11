@@ -1,0 +1,282 @@
+<!-- templates/admin/admin_base.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- The title can be customized by child templates -->
+    <title>{% block title %}SnailSynk Admin{% endblock %}</title>
+
+    <!-- Shared Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='icon/favicon.png') }}" type="image/png">
+    {% block head %}{% endblock %}
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') document.documentElement.classList.add('dark');
+            const accent = localStorage.getItem('accent') || 'red';
+            document.documentElement.classList.add('accent-' + accent);
+        })();
+    </script>
+</head>
+
+<body>
+    <header class="app-header">
+        <div class="app-container" style=" margin-left: 5%; max-width: -webkit-fill-available;">
+            <a href="{{ url_for('main.index') }}" class="logo">
+                <img src="{{ url_for('static', filename='icon/favicon.png') }}" alt="SnailSynk Icon"
+                    style="width: 40px; height: 40px;">
+                <h1 id="snail">SnailSynk - {% block header_title %}Admin Dashboard{% endblock %}</h1>
+            </a>
+
+            <div class="header-actions">
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary" title="Back to App">Back to App</a>
+                <a href="{{ url_for('admin.logout') }}" class="btn btn-secondary">Logout</a>
+
+                <button id="coffeeBtn" class="btn-icon" title="Buy me a coffee">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                        <line x1="6" y1="1" x2="6" y2="4"></line>
+                        <line x1="10" y1="1" x2="10" y2="4"></line>
+                        <line x1="14" y1="1" x2="14" y2="4"></line>
+                    </svg>
+                </button>
+
+                <button id="connectBtn" class="btn-icon" title="Connect a device">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <line x1="14" y1="14" x2="14" y2="21"></line>
+                        <line x1="21" y1="14" x2="21" y2="21"></line>
+                        <line x1="14" y1="21" x2="21" y2="21"></line>
+                    </svg>
+                </button>
+                <div class="accent-picker-wrapper">
+                    <button id="accent-toggle" class="btn-icon" title="Change accent color">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="13.5" cy="6.5" r="2.5"></circle>
+                            <circle cx="17.5" cy="10.5" r="2.5"></circle>
+                            <circle cx="8.5" cy="7.5" r="2.5"></circle>
+                            <circle cx="6.5" cy="12.5" r="2.5"></circle>
+                            <path
+                                d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.555C21.965 6.012 17.461 2 12 2z">
+                            </path>
+                        </svg>
+                    </button>
+                    <div id="accent-picker" class="accent-picker">
+                        <button class="accent-option accent-red" data-accent="red" title="Red"></button>
+                        <button class="accent-option accent-blue" data-accent="blue" title="Blue"></button>
+                        <button class="accent-option accent-green" data-accent="green" title="Green"></button>
+                        <button class="accent-option accent-purple" data-accent="purple" title="Purple"></button>
+                        <button class="accent-option accent-orange" data-accent="orange" title="Orange"></button>
+                        <button class="accent-option accent-black" data-accent="black" title="Black"></button>
+                    </div>
+                </div>
+                <button id="theme-toggle" class="btn-icon" title="Toggle theme">
+                    <span class="sun-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </span>
+                    <span class="moon-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-main-container">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <!-- Sidebar Header with Branding -->
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                </div>
+                <span class="brand-text">Admin Panel</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <ul id="admin-nav">
+                    <li>
+                        <a href="{{ url_for('admin.monitoring') }}"
+                            class="{{ 'active' if request.endpoint == 'admin.monitoring' else '' }}"
+                            data-tooltip="Monitoring">
+                            <div class="nav-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M3 3v18h18"></path>
+                                    <path d="M18 17V9"></path>
+                                    <path d="M13 17V5"></path>
+                                    <path d="M8 17v-3"></path>
+                                </svg>
+                            </div>
+                            <span class="nav-text">Monitoring</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('admin.notes') }}"
+                            class="{{ 'active' if request.endpoint == 'admin.notes' else '' }}" data-tooltip="Notes">
+                            <div class="nav-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </div>
+                            <span class="nav-text">Notes</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Sidebar Toggle Button (inside sidebar) -->
+            <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+                <svg class="toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="11 17 6 12 11 7"></polyline>
+                    <polyline points="18 17 13 12 18 7"></polyline>
+                </svg>
+            </button>
+        </aside>
+
+        <main class="admin-content">
+            <!-- This is where the content of each specific page will be injected -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <div id="coffeeModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Feedback & Support</h2>
+                <button id="closeCoffeeModal" class="btn-icon modal-close-btn" title="Close"><svg
+                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <!-- ADDED: Toggle buttons -->
+                <div class="modal-toggle-buttons">
+                    <button id="showFeedbackQrBtn" class="btn btn-secondary active">Feedback</button>
+                    <button id="showSupportQrBtn" class="btn btn-secondary">Support</button>
+                </div>
+
+                <!-- Container for Feedback QR -->
+                <div id="feedbackQrView">
+                    <p class="modal-description">Scan to open my Instagram profile and send your feedback directly via
+                        DM.</p>
+                    <div class="qr-code-container" id="feedbackQrContainer">
+                        <div class="spinner"></div>
+                    </div>
+                    <p class="qr-label">Instagram: <strong>@Sometimes.Saksham</strong></p>
+                </div>
+
+                <!-- Container for Support QR (initially hidden) -->
+                <div id="supportQrView" style="display: none;">
+                    <p class="modal-description">If you find this tool helpful, you can support its development by
+                        scanning the UPI QR code.</p>
+                    <div class="qr-code-container" id="coffeeQrContainer">
+                        <div class="spinner"></div>
+                    </div>
+                    <p class="qr-label">UPI: <strong>kumarsaksham@yesg</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="connectModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Connect a Device</h2>
+                <button id="closeConnectModal" class="btn-icon modal-close-btn" title="Close"><svg
+                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="view-toggle" style="justify-content: center;">
+                    <span class="toggle-label">Server IP</span>
+                    <label class="switch"><input type="checkbox" id="connectViewToggle"><span
+                            class="slider round"></span></label>
+                    <span class="toggle-label">Wi-Fi</span>
+                </div>
+                <div id="ipConnectView">
+                    <p class="modal-description">Scan this QR code to open this page on your mobile device.</p>
+                    <div class="qr-code-container" id="ipQrContainer">
+                        <div class="spinner"></div>
+                    </div>
+                    <p class="qr-label">URL: <strong>http://{{ server_ip }}:<span id="dynamicPort"></span></strong></p>
+                    <script>document.getElementById('dynamicPort').textContent = location.port || '80';</script>
+                </div>
+                <div id="wifiConnectView" class="view-hidden">
+                    <p class="modal-description">Your Wi-Fi name is pre-filled. Enter the password to generate a
+                        connection QR code.</p>
+                    <form id="wifiQrForm">
+                        <div class="form-group">
+                            <label for="wifiSSID">Network Name (SSID)</label>
+                            <input type="text" id="wifiSSID" name="ssid" placeholder="Could not detect Wi-Fi" required
+                                value="{{ current_ssid or '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifiPassword">Password</label>
+                            <input type="password" id="wifiPassword" name="password" placeholder="Your Wi-Fi password">
+                        </div>
+                        <button type="submit" id="generateWifiQrBtn" class="btn btn-primary">Generate QR Code</button>
+                    </form>
+                    <div class="qr-code-container" id="wifiQrContainer" style="margin-top: 1.5rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Shared Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- MODIFIED: Replaced old libraries with Toast UI Editor -->
+    <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+    <script src="{{ url_for('static', filename='js/backbone.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin-notes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin-dashboard.js') }}"></script>
+</body>
+
+</html>

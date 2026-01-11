@@ -1,0 +1,26 @@
+/* static/css/light-theme.css - Light Theme Color Variables */
+
+html:not(.dark) {
+    --c-bg: #f7f7f7;
+    --c-surface: #ffffff;
+    --c-border: #e5e5e5;
+    --c-border-hover: #d4d4d4;
+    --c-text-main: #171717;
+    --c-text-muted: #737373;
+    --c-text-placeholder: #a3a3a3;
+    --c-primary: var(--c-text-main);
+    --c-primary-text: var(--c-surface);
+
+    --c-success: #16a34a;
+    --c-success-bg: #f0fdf4;
+    --c-success-text: #14532d;
+    --c-error: #dc2626;
+    --c-error-bg: #fef2f2;
+    --c-error-text: #7f1d1d;
+    --c-info: #2563eb;
+    --c-info-bg: #eff6ff;
+    --c-info-text: #1e3a8a;
+    --c-warning: #facc15;
+    --c-warning-bg: #fffbeb;
+    --c-warning-text: #854d09;
+}

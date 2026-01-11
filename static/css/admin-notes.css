@@ -1,0 +1,1008 @@
+/* Enhanced Notes Editor - Compact Tree View Design */
+
+.notes-container {
+    display: flex;
+    height: calc(100vh - 70px);
+    max-height: calc(100vh - 70px);
+    background: var(--c-background);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== FLOATING NOTES SIDEBAR ===== */
+.notes-sidebar {
+    position: fixed;
+    left: 240px;
+    top: 11%;
+    bottom: 20px;
+    width: 282px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    transition: left 0.3s ease;
+}
+
+html.dark .notes-sidebar {
+    background: rgba(28, 28, 32, 0.92);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Adjust when admin sidebar is collapsed */
+.admin-sidebar.collapsed~.admin-content .notes-sidebar {
+    left: 84px;
+}
+
+.sidebar-header {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+}
+
+html.dark .sidebar-header {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--c-text-main);
+}
+
+.sidebar-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-icon {
+    background: transparent;
+    border: 1px solid var(--c-border);
+    padding: 0.4rem;
+    border-radius: 6px;
+    color: var(--c-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Search */
+.search-container {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    position: relative;
+}
+
+html.dark .search-container {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.search-icon {
+    position: absolute;
+    left: 1.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-text-secondary);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem 0.625rem 2.25rem;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    background: var(--c-background);
+    color: var(--c-text-main);
+    font-size: 0.8125rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.search-input:focus {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 2px rgba(var(--c-primary-rgb), 0.1);
+}
+
+.search-input::placeholder {
+    color: var(--c-text-secondary);
+    opacity: 0.6;
+}
+
+/* ===== COMPACT TREE VIEW ===== */
+.notes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* Folder items */
+.note-item.folder {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--c-text-main);
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.note-item.folder:hover {
+    background: var(--c-background);
+    border-color: var(--c-border);
+}
+
+.note-item.folder .folder-icon {
+    font-size: 1rem;
+    color: var(--c-primary);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.note-item.folder.collapsed .folder-icon {
+    transform: rotate(-90deg);
+}
+
+.note-item.folder .folder-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Note items (files) */
+.note-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    padding-left: 2rem;
+    /* Indent for files under folders */
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 0.125rem;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.8125rem;
+}
+
+.note-item:hover {
+    background: var(--c-background);
+    border-color: var(--c-border);
+}
+
+.note-item.active {
+    background: linear-gradient(135deg, rgba(var(--c-primary-rgb), 0.12), rgba(var(--c-primary-rgb), 0.06));
+    border-color: var(--c-primary);
+    color: var(--c-primary);
+}
+
+.note-item.hidden {
+    display: none !important;
+}
+
+/* Drag and drop styling */
+.notes-list.drop-zone-active {
+    background: rgba(var(--c-primary-rgb), 0.03);
+    border: 2px dashed var(--c-primary);
+    border-radius: 8px;
+}
+
+.note-item[draggable="true"] {
+    cursor: grab;
+}
+
+.note-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.note-item-title {
+    font-weight: 500;
+    color: var(--c-text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.note-item.active .note-item-title {
+    color: var(--c-primary);
+    font-weight: 600;
+}
+
+.note-item-date {
+    font-size: 0.6875rem;
+    color: var(--c-text-secondary);
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+/* Checkbox styling */
+.note-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+    accent-color: var(--c-primary);
+}
+
+.note-item:has(.note-checkbox) {
+    display: flex;
+    align-items: center;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--c-text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Filter */
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--c-text-secondary);
+    margin: 0;
+}
+
+.filter-select {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    background: var(--c-surface);
+    color: var(--c-text-main);
+    font-size: 0.8125rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-select:focus {
+    border-color: var(--c-primary);
+}
+
+/* Filter container */
+.filter-container {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--c-border);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+/* Batch actions bar */
+.batch-actions {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--c-border);
+    background: rgba(var(--c-primary-rgb), 0.05);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.batch-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-primary);
+    white-space: nowrap;
+    margin-right: auto;
+}
+
+.batch-actions .btn {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.batch-actions .btn-sm {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+/* Active button state */
+.btn.active {
+    background: var(--c-primary) !important;
+    border-color: var(--c-primary) !important;
+    color: white !important;
+}
+
+.btn.active:hover {
+    background: var(--c-primary-hover) !important;
+}
+
+/* ===== CONTEXT MENU ===== */
+.context-menu {
+    position: fixed;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 0.375rem;
+    min-width: 180px;
+    z-index: 1000;
+    display: none;
+}
+
+html.dark .context-menu {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.context-menu.visible {
+    display: block;
+    animation: contextMenuFadeIn 0.12s ease;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--c-text-main);
+}
+
+.context-menu-item svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.context-menu-item:hover {
+    background: rgba(var(--c-primary-rgb), 0.1);
+    color: var(--c-primary);
+}
+
+.context-menu-item.danger {
+    color: var(--c-danger);
+}
+
+.context-menu-item.danger:hover {
+    background: rgba(var(--c-accent-rgb), 0.1);
+    color: var(--c-danger-hover);
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: var(--c-border);
+    margin: 0.375rem 0;
+}
+
+/* ===== EDITOR ===== */
+.editor-main {
+    position: fixed;
+    left: calc(240px + 282px + 17px);
+    top: 11%;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    z-index: 40;
+}
+
+html.dark .editor-main {
+    background: rgba(28, 28, 32, 0.92);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.editor-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.editor-placeholder svg {
+    color: var(--c-text-secondary);
+    opacity: 0.2;
+}
+
+.editor-placeholder h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text-main);
+}
+
+.editor-placeholder p {
+    margin: 0;
+    color: var(--c-text-secondary);
+    font-size: 0.9375rem;
+}
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-header {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--c-border);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background: var(--c-surface);
+}
+
+.note-title {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--c-text-main);
+}
+
+.note-title::placeholder {
+    color: var(--c-text-secondary);
+    opacity: 0.4;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-main);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    background: var(--c-background);
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--c-primary-hover);
+}
+
+.btn-danger {
+    border-color: var(--c-danger);
+    color: var(--c-danger);
+}
+
+.btn-danger:hover {
+    background: var(--c-danger);
+    color: white;
+}
+
+/* ===== QUILL EDITOR ===== */
+#editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ql-container {
+    flex: 1;
+    font-size: 15px;
+    font-family: inherit;
+    border: none !important;
+    overflow: auto !important;
+    min-height: 0;
+}
+
+.ql-editor {
+    padding: 1.75rem;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.ql-toolbar {
+    border: none !important;
+    border-bottom: 1px solid var(--c-border) !important;
+    background: var(--c-surface) !important;
+    padding: 0.75rem 1.25rem !important;
+}
+
+/* Toolbar buttons */
+.ql-toolbar button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+    transition: all 0.12s ease !important;
+}
+
+.ql-toolbar button:hover {
+    background: rgba(var(--c-primary-rgb), 0.1) !important;
+}
+
+.ql-toolbar button.ql-active {
+    background: var(--c-primary) !important;
+}
+
+/* Keep active buttons red on hover */
+.ql-toolbar button.ql-active:hover {
+    background: var(--c-primary-hover) !important;
+}
+
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: white !important;
+}
+
+.ql-toolbar button.ql-active .ql-fill {
+    fill: white !important;
+}
+
+.ql-toolbar .ql-stroke {
+    stroke: var(--c-text-main) !important;
+}
+
+.ql-toolbar .ql-fill {
+    fill: var(--c-text-main) !important;
+}
+
+/* Toolbar pickers */
+.ql-toolbar .ql-picker {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin: 3px;
+}
+
+.ql-toolbar .ql-picker-label {
+    border: 1px solid var(--c-border) !important;
+    border-radius: 5px !important;
+    padding: 0.4rem 0.625rem !important;
+    background: var(--c-surface) !important;
+    transition: all 0.12s ease !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.ql-toolbar .ql-picker-label:hover {
+    background: rgba(var(--c-primary-rgb), 0.1) !important;
+    border-color: var(--c-primary) !important;
+}
+
+.ql-toolbar .ql-picker-label.ql-active {
+    background: var(--c-primary) !important;
+    border-color: var(--c-primary) !important;
+}
+
+.ql-toolbar .ql-picker-options {
+    background: var(--c-surface) !important;
+    border: 1px solid var(--c-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    padding: 0.375rem !important;
+}
+
+.ql-toolbar .ql-picker-item {
+    padding: 0.4rem 0.625rem !important;
+    border-radius: 5px !important;
+}
+
+.ql-toolbar .ql-picker-item:hover {
+    background: rgba(var(--c-primary-rgb), 0.1) !important;
+    color: var(--c-primary) !important;
+}
+
+/* More specific hover overrides for header and size pickers */
+.ql-toolbar.ql-snow .ql-picker.ql-header .ql-picker-item:hover,
+.ql-toolbar.ql-snow .ql-picker.ql-size .ql-picker-item:hover,
+.ql-snow .ql-picker.ql-header .ql-picker-item:hover,
+.ql-snow .ql-picker.ql-size .ql-picker-item:hover {
+    background: rgba(var(--c-primary-rgb), 0.1) !important;
+    color: var(--c-primary) !important;
+}
+
+/* Selected picker item in dropdown */
+.ql-toolbar .ql-picker-item.ql-selected,
+.ql-toolbar.ql-snow .ql-picker.ql-header .ql-picker-item.ql-selected,
+.ql-toolbar.ql-snow .ql-picker.ql-size .ql-picker-item.ql-selected,
+.ql-snow .ql-picker.ql-header .ql-picker-item.ql-selected,
+.ql-snow .ql-picker.ql-size .ql-picker-item.ql-selected {
+    background: rgba(var(--c-primary-rgb), 0.15) !important;
+    color: var(--c-primary) !important;
+}
+
+/* Expanded state for dropdown pickers (when dropdown is open) */
+.ql-toolbar .ql-picker.ql-expanded .ql-picker-label {
+    background: var(--c-primary) !important;
+    border-color: var(--c-primary) !important;
+    color: white !important;
+}
+
+.ql-toolbar .ql-picker.ql-expanded .ql-picker-label .ql-stroke {
+    stroke: white !important;
+}
+
+.ql-toolbar .ql-picker.ql-expanded .ql-picker-label .ql-fill {
+    fill: white !important;
+}
+
+/* Active picker label text color */
+.ql-toolbar .ql-picker-label.ql-active {
+    color: white !important;
+}
+
+.ql-toolbar .ql-picker-label.ql-active::before {
+    color: white !important;
+}
+
+/* Picker label with selected value (not expanded) - override blue text */
+.ql-toolbar.ql-snow .ql-picker.ql-header .ql-picker-label:not(.ql-active),
+.ql-toolbar.ql-snow .ql-picker.ql-size .ql-picker-label:not(.ql-active),
+.ql-snow .ql-picker.ql-header .ql-picker-label,
+.ql-snow .ql-picker.ql-size .ql-picker-label {
+    color: var(--c-text-main) !important;
+}
+
+/* When picker has a selected value but not expanded - show red accent */
+.ql-toolbar.ql-snow .ql-picker.ql-header:not(.ql-expanded) .ql-picker-label.ql-active,
+.ql-toolbar.ql-snow .ql-picker.ql-size:not(.ql-expanded) .ql-picker-label.ql-active,
+.ql-snow .ql-picker.ql-header:not(.ql-expanded) .ql-picker-label.ql-active,
+.ql-snow .ql-picker.ql-size:not(.ql-expanded) .ql-picker-label.ql-active {
+    background: var(--c-primary) !important;
+    border-color: var(--c-primary) !important;
+    color: white !important;
+}
+
+.ql-toolbar.ql-snow .ql-picker.ql-header:not(.ql-expanded) .ql-picker-label.ql-active::before,
+.ql-toolbar.ql-snow .ql-picker.ql-size:not(.ql-expanded) .ql-picker-label.ql-active::before,
+.ql-snow .ql-picker.ql-header:not(.ql-expanded) .ql-picker-label.ql-active::before,
+.ql-snow .ql-picker.ql-size:not(.ql-expanded) .ql-picker-label.ql-active::before {
+    color: white !important;
+}
+
+/* Font size and header labels */
+.ql-toolbar .ql-size .ql-picker-label::before {
+    content: '📏 Size' !important;
+    font-size: 0.8125rem !important;
+}
+
+.ql-toolbar .ql-header .ql-picker-label::before {
+    content: '📝 Style' !important;
+    font-size: 0.8125rem !important;
+}
+
+/* Color picker icons - larger size */
+.ql-toolbar .ql-color .ql-picker-label,
+.ql-toolbar .ql-background .ql-picker-label {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.ql-toolbar .ql-color .ql-picker-label svg,
+.ql-toolbar .ql-background .ql-picker-label svg {
+    display: block !important;
+    width: 22px !important;
+    height: 22px !important;
+}
+
+.ql-toolbar .ql-color .ql-picker-label .ql-stroke,
+.ql-toolbar .ql-background .ql-picker-label .ql-stroke {
+    stroke: var(--c-text-main) !important;
+}
+
+.ql-toolbar .ql-color .ql-picker-label .ql-fill,
+.ql-toolbar .ql-background .ql-picker-label .ql-fill {
+    fill: var(--c-text-main) !important;
+}
+
+.ql-toolbar .ql-color.ql-expanded .ql-picker-label .ql-stroke,
+.ql-toolbar .ql-background.ql-expanded .ql-picker-label .ql-stroke {
+    stroke: white !important;
+}
+
+.ql-toolbar .ql-color.ql-expanded .ql-picker-label .ql-fill,
+.ql-toolbar .ql-background.ql-expanded .ql-picker-label .ql-fill {
+    fill: white !important;
+}
+
+/* Toolbar button SVG */
+.ql-toolbar button svg {
+    display: block !important;
+    margin: auto !important;
+}
+
+/* Toolbar separators */
+.ql-toolbar .ql-formats {
+    margin-right: 0.875rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+/* ===== PREVENT PAGE SCROLLING ON NOTES PAGE ===== */
+body:has(.notes-container) {
+    overflow: hidden;
+    height: 100vh;
+}
+
+body:has(.notes-container) .admin-main-container {
+    overflow: hidden;
+    height: calc(100vh - 70px);
+}
+
+body:has(.notes-container) .admin-content {
+    overflow: hidden;
+    height: 100%;
+}
+
+/* ===== MOBILE RESPONSIVE STYLES ===== */
+@media (max-width: 768px) {
+
+    /* Root overflow prevention */
+    html,
+    body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+
+    body:has(.notes-container) {
+        overflow: hidden;
+    }
+
+    /* Container - stack vertically on mobile */
+    .notes-container {
+        flex-direction: column;
+        height: calc(100vh - 70px - 70px);
+        /* Header + bottom nav */
+        overflow: hidden;
+    }
+
+    /* Notes Sidebar - horizontal top bar on mobile */
+    .notes-sidebar {
+        position: relative;
+        left: 0;
+        top: 0;
+        bottom: auto;
+        width: 100%;
+        height: auto;
+        max-height: 45vh;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    html.dark .notes-sidebar {
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .admin-sidebar.collapsed~.admin-content .notes-sidebar {
+        left: 0;
+    }
+
+    .sidebar-header {
+        padding: 0.75rem;
+        min-height: 44px;
+    }
+
+    .sidebar-header h3 {
+        font-size: 0.875rem;
+    }
+
+    .sidebar-actions .btn-icon {
+        width: 36px;
+        height: 36px;
+        padding: 0.5rem;
+    }
+
+    /* Search */
+    .search-container {
+        padding: 0.5rem 0.75rem;
+    }
+
+    #noteSearch {
+        font-size: 1rem;
+        min-height: 40px;
+    }
+
+    /* Filter */
+    .filter-container {
+        padding: 0.5rem 0.75rem;
+    }
+
+    #filterDropdown {
+        font-size: 0.875rem;
+        min-height: 36px;
+        padding: 0.4rem 0.75rem;
+    }
+
+    /* Notes list */
+    .notes-list-container {
+        max-height: 30vh;
+        overflow-y: auto;
+    }
+
+    .notes-tree {
+        padding: 0.5rem;
+    }
+
+    .tree-item {
+        padding: 0.5rem 0.75rem;
+        min-height: 40px;
+    }
+
+    .tree-label {
+        font-size: 0.8rem;
+    }
+
+    /* Editor Area */
+    .editor-container {
+        flex: 1;
+        position: relative;
+        margin-left: 0;
+        width: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .admin-sidebar.collapsed~.admin-content .editor-container {
+        margin-left: 0;
+    }
+
+    .editor-header {
+        padding: 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .editor-title-input {
+        font-size: 1rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .editor-actions {
+        gap: 0.25rem;
+    }
+
+    .editor-actions .btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .editor-actions .btn {
+        min-height: 36px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Quill Editor */
+    .quill-wrapper {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ql-toolbar {
+        flex-shrink: 0;
+        overflow-x: auto;
+        padding: 0.5rem !important;
+    }
+
+    .ql-toolbar .ql-formats {
+        margin-right: 0.5rem !important;
+    }
+
+    .ql-container {
+        flex: 1;
+        overflow-y: auto;
+        font-size: 1rem !important;
+    }
+
+    .ql-editor {
+        padding: 1rem !important;
+    }
+
+    /* Empty state */
+    .editor-empty-state {
+        padding: 2rem 1rem;
+    }
+
+    .editor-empty-state svg {
+        width: 40px;
+        height: 40px;
+    }
+
+    .editor-empty-state p {
+        font-size: 0.875rem;
+    }
+
+    /* Context menu */
+    .context-menu {
+        min-width: 160px;
+    }
+
+    .context-menu-item {
+        padding: 0.625rem 1rem;
+        min-height: 40px;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        margin: 1rem;
+    }
+}

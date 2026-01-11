@@ -1,0 +1,306 @@
+{% extends "index_base.html" %}
+
+{% block title %}SnailSynk - Home{% endblock %}
+
+{% block content %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<ul class="flash-messages">
+    {% for category, message in messages %}
+    <li class="{{ category }}">
+        <span>{{ message }}</span>
+        <button class="close-flash"
+            onclick="this.parentElement.style.opacity='0'; setTimeout(() => this.parentElement.remove(), 300);">×</button>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+
+<div class="main-content">
+    <section class="panel shared-text-section">
+        <div class="panel-header panel-header-with-toggle">
+            <h2 id="buffer-title">Shared Text Buffer</h2>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button id="geminiToggleBtn" class="gemini-toggle-btn" title="Toggle AI Chat">
+                    <img src="{{ url_for('static', filename='icon/christmas-stars.svg') }}" alt="AI Chat"
+                        class="gemini-icon">
+                </button>
+                <div class="view-toggle">
+                    <span class="toggle-label">Shared</span>
+                    <label class="switch"><input type="checkbox" id="viewToggleSwitch"><span
+                            class="slider round"></span></label>
+                    <span class="toggle-label">Pinned</span>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="shared-text-view">
+                <div class="shared-text-header">
+                    <p class="section-description" id="sharedTextDescription">'Commit' saves to buffer. 'Select' <span
+                            id="selectTextAction">copies to clipboard</span>.</p>
+                    <button id="previewBtn" class="btn-icon" title="Preview Markdown">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <div class="textarea-wrapper">
+                    <textarea id="sharedTextArea" placeholder="Paste your text here..."></textarea>
+                    <div id="markdownPreview" class="markdown-preview view-hidden"></div>
+                    <button id="scrollBufferBtn" class="btn-icon buffer-scroll-btn" title="Scroll to End">
+                        <span class="scroll-down-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 5v14m-4-4 4 4 4-4" />
+                            </svg></span>
+                        <span class="scroll-up-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M12 19V5m-4 4 4-4 4 4" />
+                            </svg></span>
+                    </button>
+                    <div class="text-meta" id="textMeta">0 chars</div>
+                </div>
+                <div class="form-actions buffer-actions">
+                    <button id="commitBtn" class="btn btn-primary">Commit</button>
+                    <button id="pinBtn" class="btn btn-secondary" title="Pin the current text">Pin</button>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                    <button id="selectBtn" class="btn btn-secondary">Select</button>
+                    <button id="editorBtn" class="btn btn-secondary" title="Toggle Markdown Editor">Editor</button>
+                </div>
+                <div id="clipboardStatus" class="clipboard-status"></div>
+            </div>
+            <div id="pinned-messages-view" class="view-hidden">
+                <p class="section-description">View and manage your 5 most recent pins.</p>
+                <div id="pinned-messages-container" class="pinned-messages-container"></div>
+            </div>
+            <div id="ai-chat-view" class="view-hidden">
+                <div class="ai-chat-header">
+                    <p class="section-description">Chat with Google Gemini AI.</p>
+                    <button id="resetChatBtn" class="btn btn-secondary btn-sm" title="Reset Chat">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        Reset
+                    </button>
+                </div>
+                <div class="ai-chat-container">
+                    <div id="aiChatMessages" class="ai-chat-messages">
+                        <div class="ai-chat-empty">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <p>Start a conversation with Gemini AI</p>
+                        </div>
+                    </div>
+                    <div class="ai-chat-input-area">
+                        <div class="ai-chat-input-wrapper">
+                            <textarea id="aiChatInput" placeholder="Ask Gemini anything..." rows="1"></textarea>
+                            <button id="aiChatSendBtn" class="btn btn-primary">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="right-column-wrapper">
+        <section class="panel upload-section">
+            <div class="panel-header">
+                <h2>Upload File</h2>
+            </div>
+            <div class="panel-body">
+                <p class="section-description">Select or drag files to upload to the shared directory.</p>
+                <form id="uploadForm" method="post" action="{{ url_for('main.upload_file') }}"
+                    enctype="multipart/form-data">
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <p><strong>Drag & drop files here</strong> or click to select</p>
+                    </div>
+                    <input type="file" name="file" id="fileInput" multiple style="display: none;">
+                    <div id="uploadProgressContainer" class="progress-container">
+                        <div class="progress-bar-label">Uploading...</div>
+                        <div class="progress-bar">
+                            <div id="uploadProgressBar" class="progress-bar-inner"></div>
+                        </div>
+                    </div>
+                    <div class="upload-actions form-actions">
+                        <button type="button" id="chooseButton" class="btn btn-secondary"
+                            onclick="document.getElementById('fileInput').click();">Choose File</button>
+                        <button type="button" id="clearUploadBtn" class="btn btn-secondary"
+                            style="display: none;">Clear</button>
+                        <button type="submit" id="uploadButton" class="btn btn-primary" disabled>Upload</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <section class="panel download-section">
+            <div class="panel-header" id="download-panel-header">
+                <h2>Download Directory</h2>
+                {% if files and files|length > 0 %}
+                <div class="panel-header-controls">
+                    <select id="sortFilesDropdown" class="btn" title="Sort files">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="date-desc" selected>Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                    </select>
+                    <button id="searchToggleBtn" class="btn-icon" title="Search files">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <div id="searchContainer" class="search-container">
+                <div class="search-input-wrapper">
+                    <input type="text" id="searchInput" placeholder="Search by filename..." autocomplete="off">
+                    <button id="clearSearchBtn" class="btn-icon" title="Clear search">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="panel-body download-section">
+                {% if files and files|length > 0 %}
+                <form id="downloadSelectedForm" method="POST" action="{{ url_for('main.download_selected_files') }}">
+                    <div class="download-container">
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="width: auto; text-align: center;"><input type="checkbox"
+                                                id="selectAllFilesCheckbox" title="Select/Deselect All"></th>
+                                        <th>Filename</th>
+                                        <th class="index-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-list-body">
+                                    {% for file in files %}
+                                    {% if file.name is defined %}
+                                    <tr data-file-row="{{ file.encoded_name }}" data-sort-name="{{ file.name.lower() }}"
+                                        data-sort-date="{{ file.mtime }}">
+                                        <td style="text-align: center;"><input type="checkbox" name="selected_files"
+                                                value="{{ file.name }}" class="file-checkbox"></td>
+                                        <td><a href="{{ url_for('main.download_file', filename=file.encoded_name) }}"
+                                                download title="Download {{ file.name }}" class="file-link-preview"
+                                                data-filename="{{ file.encoded_name }}"
+                                                data-locked="{{ 'true' if file.is_locked else 'false' }}">{{ file.name
+                                                }}</a></td>
+                                        <td class="index-file-actions">
+                                            <a href="{{ url_for('main.download_file', filename=file.encoded_name) }}"
+                                                class="btn-icon file-download-link" title="Download {{ file.name }}"
+                                                data-filename="{{ file.encoded_name }}"
+                                                data-locked="{{ 'true' if file.is_locked else 'false' }}"><svg
+                                                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                </svg></a>
+                                            {% if is_admin %}
+                                            <button type="button" class="btn-icon file-lock-btn"
+                                                title="{{ 'Unlock File' if file.is_locked else 'Lock File' }}"
+                                                data-filename="{{ file.encoded_name }}">
+                                                {% if file.is_locked %}
+                                                <!-- Locked Icon -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                </svg>
+                                                {% else %}
+                                                <!-- Unlocked Icon -->
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                                </svg>
+                                                {% endif %}
+                                            </button>
+                                            <button type="button" class="btn-icon delete-file-btn"
+                                                title="Delete {{ file.name }}" data-filename="{{ file.encoded_name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path
+                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: var(--c-error);">Error:
+                                            Invalid file data (missing name)</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                    <tr id="noResultsRow" style="display: none;">
+                                        <td colspan="3" style="text-align: center;">No matching files found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="form-actions download-specific-actions">
+                        <button type="submit" id="downloadSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>Download</button>
+                        {% if is_admin %}
+                        <button type="button" id="lockSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>Lock</button>
+                        <button type="button" id="unlockSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                            </svg>Unlock</button>
+                        <button type="button" id="deleteSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>Delete</button>
+                        {% endif %}
+                    </div>
+                </form>
+                {% else %}
+                <p class="no-files">No files available. Upload a file to get started!</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

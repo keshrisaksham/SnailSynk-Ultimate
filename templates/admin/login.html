@@ -1,0 +1,70 @@
+<!-- templates/admin/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnailSynk Admin Login</title>
+
+    <!-- Updated CSS links for new structure -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-login.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='icon/favicon.png') }}" type="image/png">
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+            const accent = localStorage.getItem('accent') || 'red';
+            document.documentElement.classList.add('accent-' + accent);
+        })();
+    </script>
+</head>
+
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flash-messages">
+        {% for category, message in messages %}
+        <li class="{{ category }}">
+            <span>{{ message }}</span>
+            <button class="close-flash"
+                onclick="this.parentElement.style.opacity='0'; setTimeout(() => this.parentElement.remove(), 300);">×</button>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    <div class="panel login-panel">
+        <div class="panel-header">
+            <h2><img src="{{ url_for('static', filename='icon/favicon.png') }}" alt="SnailSynk" class="login-logo">Admin
+                Login</h2>
+        </div>
+        <div class="panel-body">
+            <form method="POST" action="{{ url_for('admin.login') }}">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" style="margin-left: 0rem;">Login</button>
+            </form>
+            <div style="text-align: center; margin-top: 1.35rem;">
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary btn-full">Back to App</a>
+                <!-- **** FIXED THIS LINE **** -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

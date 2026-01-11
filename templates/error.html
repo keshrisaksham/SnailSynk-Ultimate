@@ -1,0 +1,21 @@
+{% extends "index_base.html" %}
+
+{% block title %}Error {{ error_code }} - SnailSynk{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/error_page.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="panel error-panel">
+        <div class="panel-body">
+            <h1 class="error-code">{{ error_code }}</h1>
+            <h2 class="error-title">{{ error_title }}</h2>
+            <p class="error-description">{{ error_description }}</p>
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary go-home-btn">Go to Homepage</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

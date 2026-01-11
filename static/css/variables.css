@@ -1,0 +1,109 @@
+/* static/css/variables.css - Central Design Tokens and Variables */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=ibm-plex-mono@400,500&display=swap');
+
+:root {
+    /* Fonts */
+    --font-sans: 'Satoshi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+
+    /* Sizing & Radius */
+    --radius: 6px;
+
+    /* Transitions */
+    --transition: all 0.3s ease;
+
+    /* --- Light Mode Palette (Default) --- */
+    --c-bg: #f7f7f7;
+    --c-bg-rgb: 247, 247, 247;
+    --c-surface: #ffffff;
+    --c-surface-rgb: 255, 255, 255;
+    --c-border: #e5e5e5;
+    --c-border-hover: #d4d4d4;
+    --c-text-main: #171717;
+    --c-text-muted: #737373;
+    --c-text-placeholder: #a3a3a3;
+    --c-primary: #dc2626;
+    --c-primary-rgb: 220, 38, 38;
+    --c-primary-text: #ffffff;
+    --c-primary-hover: #b91c1c;
+    --c-accent: #ef4444;
+    --c-accent-rgb: 239, 68, 68;
+
+    /* Danger colors */
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+
+    --c-success: #16a34a;
+    --c-success-bg: #f0fdf4;
+    --c-success-text: #14532d;
+    --c-error: #dc2626;
+    --c-error-bg: #fef2f2;
+    --c-error-text: #7f1d1d;
+    --c-info: #2563eb;
+    --c-info-bg: #eff6ff;
+    --c-info-text: #1e3a8a;
+    --c-warning: #facc15;
+    --c-warning-bg: #fffbeb;
+    --c-warning-text: #854d09;
+}
+
+/* === Accent Color Themes === */
+:root.accent-red {
+    --c-primary: #dc2626;
+    --c-primary-rgb: 220, 38, 38;
+    --c-primary-hover: #b91c1c;
+    --c-accent: #ef4444;
+    --c-accent-rgb: 239, 68, 68;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}
+
+:root.accent-blue {
+    --c-primary: #2563eb;
+    --c-primary-rgb: 37, 99, 235;
+    --c-primary-hover: #1d4ed8;
+    --c-accent: #3b82f6;
+    --c-accent-rgb: 59, 130, 246;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}
+
+:root.accent-green {
+    --c-primary: #16a34a;
+    --c-primary-rgb: 22, 163, 74;
+    --c-primary-hover: #15803d;
+    --c-accent: #22c55e;
+    --c-accent-rgb: 34, 197, 94;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}
+
+:root.accent-purple {
+    --c-primary: #7c3aed;
+    --c-primary-rgb: 124, 58, 237;
+    --c-primary-hover: #6d28d9;
+    --c-accent: #8b5cf6;
+    --c-accent-rgb: 139, 92, 246;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}
+
+:root.accent-orange {
+    --c-primary: #ea580c;
+    --c-primary-rgb: 234, 88, 12;
+    --c-primary-hover: #c2410c;
+    --c-accent: #f97316;
+    --c-accent-rgb: 249, 115, 22;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}
+
+:root.accent-black {
+    --c-primary: #171717;
+    --c-primary-rgb: 23, 23, 23;
+    --c-primary-hover: #0a0a0a;
+    --c-accent: #404040;
+    --c-accent-rgb: 64, 64, 64;
+    --c-danger: #ef4444;
+    --c-danger-hover: #dc2626;
+}

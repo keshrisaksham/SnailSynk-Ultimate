@@ -1,0 +1,9 @@
+Flask
+Flask-SocketIO
+argon2-cffi
+python-dotenv
+qrcode
+rich
+gevent
+pyperclip
+google-generativeai

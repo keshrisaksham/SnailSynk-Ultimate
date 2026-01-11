@@ -1,0 +1,42 @@
+/* static/css/error_page.css */
+
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; /* Takes up all available space in the main content area */
+    padding-bottom: 5rem; /* Pushes the panel up slightly from the footer */
+}
+
+.error-panel {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.error-panel .panel-body {
+    padding: 3rem;
+}
+
+.error-code {
+    font-size: 5rem;
+    font-weight: 700;
+    color: var(--c-text-placeholder);
+    margin: 0;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 1.75rem;
+    margin: 1rem 0;
+    color: var(--c-text-main);
+}
+
+.error-description {
+    color: var(--c-text-muted);
+    margin-bottom: 2.5rem;
+}
+
+.go-home-btn {
+    margin-left: 0; /* Override default button margins if any */
+}

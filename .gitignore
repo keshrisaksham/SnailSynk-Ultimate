@@ -1,0 +1,27 @@
+# .gitignore
+
+# Install lock file
+.install_lock
+install.loc
+
+# Install log
+*.log
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Instance folder with user credentials
+instance/
+
+# Old files
+admin.js
+
+#old_backbone/
+Backbone.py
+
+#Old Directory
+Old_files/

@@ -1,0 +1,110 @@
+/* static/css/dark-theme.css - Dark Mode Overrides */
+
+html.dark {
+    /* Re-declare variables for the dark theme */
+    --c-bg: #171717;
+    --c-bg-rgb: 23, 23, 23;
+    --c-surface: #262626;
+    --c-surface-rgb: 38, 38, 38;
+    --c-border: #404040;
+    --c-border-hover: #525252;
+    --c-text-main: #f5f5f5;
+    --c-text-muted: #a3a3a3;
+    --c-text-placeholder: #737373;
+    --c-primary: #dc2626;
+    --c-primary-rgb: 220, 38, 38;
+    --c-primary-text: #ffffff;
+    --c-accent: #ef4444;
+    --c-success: #4ade80;
+    --c-success-bg: #14532d;
+    --c-success-text: #dcfce7;
+    --c-error: #f87171;
+    --c-error-bg: #7f1d1d;
+    --c-error-text: #fee2e2;
+    --c-info: #60a5fa;
+    --c-info-bg: #1e3a8a;
+    --c-info-text: #dbeafe;
+    --c-warning: #facc15;
+    --c-warning-bg: #854d09;
+    --c-warning-text: #fefce8;
+}
+
+/* Specific component overrides for dark mode */
+html.dark body {
+    background-image: linear-gradient(to right, #262626 1px, transparent 1px), linear-gradient(to bottom, #262626 1px, transparent 1px);
+}
+
+html.dark .app-header {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+html.dark .floating-scroll-btn {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .image-preview-popup {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .modal-content {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .form-group input {
+    color: var(--c-text-main);
+}
+
+html.dark .btn-primary:hover:not(:disabled) {
+    background-color: #ef4444;
+    border-color: #ef4444;
+}
+
+html.dark .btn-secondary:hover:not(:disabled) {
+    border-color: var(--c-border-hover);
+    background-color: #1f1f1f;
+}
+
+html.dark textarea#sharedTextArea:focus {
+    border-color: var(--c-text-main);
+}
+
+html.dark th {
+    background-color: #1f1f1f;
+}
+
+html.dark tr:not(.hidden-row):hover {
+    background-color: #2f2f2f;
+}
+
+html.dark .btn-icon:hover {
+    background-color: var(--c-border);
+    color: var(--c-text-main);
+}
+
+html.dark .flash-messages .success {
+    border-color: #22c55e;
+}
+
+html.dark .flash-messages .error {
+    border-color: #ef4444;
+}
+
+html.dark .flash-messages .info {
+    border-color: #3b82f6;
+}
+
+html.dark .flash-messages .warning {
+    border-color: #eab308;
+}
+
+html.dark .slider:before {
+    background-color: var(--c-text-muted);
+}
+
+html.dark input:checked+.slider {
+    background-color: var(--c-primary);
+}
+
+html.dark input:checked+.slider:before {
+    background-color: var(--c-primary-text);
+}
