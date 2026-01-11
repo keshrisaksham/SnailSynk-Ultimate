@@ -21,11 +21,7 @@ SnailSynk is more than just a file-sharing tool; it's a comprehensive suite of i
 * **Powerful Admin Controls:**
 \*   Password-protect individual files.
 \*   Perform bulk actions: lock, unlock, and delete multiple files at once with intuitive checkbox selection.
-<br>
-### 🎮 Game Arcade
-* **Multi-Player Tic-Tac-Toe:** A classic two-player strategy game.
-* **Single-Player Classics:** Includes timeless games like Snake and Flappy Bird to play during a break.
-<br>
+
 ### 🛡️ Admin Dashboard & Notes Editor
 
 * **Live Client Monitoring:** See a list of all devices currently connected to SnailSynk.
@@ -48,7 +44,7 @@ SnailSynk is more than just a file-sharing tool; it's a comprehensive suite of i
 <br>
 ***
 
-## 💻 Technology Stack
+# 💻 Technology Stack
 
 * **Backend:** Python 3, Flask, Flask-SocketIO
 * **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3
@@ -58,7 +54,7 @@ SnailSynk is more than just a file-sharing tool; it's a comprehensive suite of i
 
 ***
 
-## 🚀 Getting Started
+# 🚀 Getting Started
 
 Follow these steps to get SnailSynk running on your local machine.
 
