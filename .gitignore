@@ -3,6 +3,7 @@
 # Install lock file
 .install_lock
 install.loc
+Current
 
 # Install log
 *.log
