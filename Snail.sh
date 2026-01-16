@@ -78,7 +78,7 @@ EOF
                 echo "--------------------------------------------------"
                 echo "   Installing: $package"
                 echo "--------------------------------------------------"
-                pip3 install "$package"
+                pip3 install "$package" --break-system-packages
             fi
         done < "requirements.txt"
         echo
