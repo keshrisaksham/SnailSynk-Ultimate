@@ -12,8 +12,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveBtn = document.getElementById('saveBtn');
     const deleteBtn = document.getElementById('deleteBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
     const searchInput = document.getElementById('searchNotes');
     const contextMenu = document.getElementById('contextMenu');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+    const modalDiscardBtn = document.getElementById('modalDiscardBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const promptModal = document.getElementById('promptModal');
+    const promptTitle = document.getElementById('promptTitle');
+    const promptMessage = document.getElementById('promptMessage');
+    const promptInput = document.getElementById('promptInput');
+    const promptConfirmBtn = document.getElementById('promptConfirmBtn');
+    const promptCancelBtn = document.getElementById('promptCancelBtn');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmYesBtn = document.getElementById('confirmYesBtn');
+    const confirmNoBtn = document.getElementById('confirmNoBtn');
 
     // State
     let quill;
@@ -22,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let contextMenuTarget = null;
     let selectedNotes = new Set();
     let draggedNote = null;
+    let hasUnsavedChanges = false;
+    let originalContent = '';
 
     // Initialize Quill
     quill = new Quill('#editor', {
@@ -40,6 +58,121 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         }
     });
+
+    // Track changes to detect unsaved edits
+    quill.on('text-change', () => {
+        if (currentNote && quill.root.innerHTML !== originalContent) {
+            hasUnsavedChanges = true;
+        }
+    });
+
+    // Custom modal for unsaved changes
+    function showUnsavedModal() {
+        return new Promise((resolve) => {
+            unsavedModal.classList.add('visible');
+
+            const handleSave = () => {
+                cleanup();
+                resolve('save');
+            };
+
+            const handleDiscard = () => {
+                cleanup();
+                resolve('discard');
+            };
+
+            const handleCancel = () => {
+                cleanup();
+                resolve('cancel');
+            };
+
+            const cleanup = () => {
+                unsavedModal.classList.remove('visible');
+                modalSaveBtn.removeEventListener('click', handleSave);
+                modalDiscardBtn.removeEventListener('click', handleDiscard);
+                modalCancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            modalSaveBtn.addEventListener('click', handleSave);
+            modalDiscardBtn.addEventListener('click', handleDiscard);
+            modalCancelBtn.addEventListener('click', handleCancel);
+        });
+    }
+
+    // Custom prompt modal
+    function showPromptModal(title, message, defaultValue = '') {
+        return new Promise((resolve) => {
+            promptTitle.textContent = title;
+            promptMessage.textContent = message;
+            promptInput.value = defaultValue;
+            promptInput.placeholder = 'Enter name...';
+            promptModal.classList.add('visible');
+
+            // Focus input after animation
+            setTimeout(() => promptInput.focus(), 100);
+
+            const handleConfirm = () => {
+                const value = promptInput.value.trim();
+                cleanup();
+                resolve(value || null);
+            };
+
+            const handleCancel = () => {
+                cleanup();
+                resolve(null);
+            };
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') handleConfirm();
+                if (e.key === 'Escape') handleCancel();
+            };
+
+            const cleanup = () => {
+                promptModal.classList.remove('visible');
+                promptConfirmBtn.removeEventListener('click', handleConfirm);
+                promptCancelBtn.removeEventListener('click', handleCancel);
+                promptInput.removeEventListener('keydown', handleKeydown);
+            };
+
+            promptConfirmBtn.addEventListener('click', handleConfirm);
+            promptCancelBtn.addEventListener('click', handleCancel);
+            promptInput.addEventListener('keydown', handleKeydown);
+        });
+    }
+
+    // Custom confirm modal
+    function showConfirmModal(title, message) {
+        return new Promise((resolve) => {
+            confirmTitle.textContent = title;
+            confirmMessage.textContent = message;
+            confirmModal.classList.add('visible');
+
+            const handleYes = () => {
+                cleanup();
+                resolve(true);
+            };
+
+            const handleNo = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') handleNo();
+            };
+
+            const cleanup = () => {
+                confirmModal.classList.remove('visible');
+                confirmYesBtn.removeEventListener('click', handleYes);
+                confirmNoBtn.removeEventListener('click', handleNo);
+                document.removeEventListener('keydown', handleKeydown);
+            };
+
+            confirmYesBtn.addEventListener('click', handleYes);
+            confirmNoBtn.addEventListener('click', handleNo);
+            document.addEventListener('keydown', handleKeydown);
+        });
+    }
 
     // API
     async function api(endpoint, method = 'GET', body = null) {
@@ -182,11 +315,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load note
     async function loadNote(path) {
+        // Check for unsaved changes before switching
+        if (hasUnsavedChanges && currentNote) {
+            const choice = await showUnsavedModal();
+
+            if (choice === 'save') {
+                await saveNote();
+            } else if (choice === 'cancel') {
+                return; // Don't switch notes
+            }
+            // 'discard' falls through to load the new note
+            hasUnsavedChanges = false;
+        }
+
         try {
             const data = await api(`note?path=${encodeURIComponent(path)}`);
             currentNote = path;
             noteTitle.value = path.split('/').pop().replace('.md', '');
             quill.root.innerHTML = data.content || '';
+            originalContent = quill.root.innerHTML; // Store original for change detection
+            hasUnsavedChanges = false;
 
             editorPlaceholder.style.display = 'none';
             editorContainer.style.display = 'flex';
@@ -209,6 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 path: currentNote,
                 content: quill.root.innerHTML
             });
+            originalContent = quill.root.innerHTML; // Update original content after save
+            hasUnsavedChanges = false;
             saveBtn.textContent = 'Saved!';
             setTimeout(() => { saveBtn.textContent = 'Save'; }, 1000);
         } catch (error) {
@@ -233,11 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let folder = '';
 
         if (folderNames.length > 0) {
-            const choice = confirm('Create note in a folder? (OK = Yes, Cancel = Root)');
+            const choice = await showConfirmModal('Create Note', 'Would you like to create this note inside a folder?');
             if (choice) {
                 // Create a simple select dialog
-                const folderSelect = folderNames.map((f, i) => `${i + 1}. ${f}`).join('\n');
-                const selection = prompt(`Select folder number:\n${folderSelect}\n\nEnter number (or cancel for root):`);
+                const folderSelect = folderNames.map((f, i) => `${i + 1}. ${f}`).join(', ');
+                const selection = await showPromptModal('Select Folder', `Enter folder number (${folderSelect}):`);
                 if (selection) {
                     const index = parseInt(selection) - 1;
                     if (index >= 0 && index < folderNames.length) {
@@ -247,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const name = prompt('Note name (without .md):');
+        const name = await showPromptModal('New Note', 'Enter note name (without .md):');
         if (!name) return;
         const path = `${folder}${name}.md`;
 
@@ -262,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Create folder
     async function createFolder() {
-        const name = prompt('Folder name:');
+        const name = await showPromptModal('New Folder', 'Enter folder name:');
         if (!name) return;
 
         try {
@@ -275,7 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Delete note
     async function deleteNote(path = currentNote) {
-        if (!path || !confirm('Delete this note?')) return;
+        if (!path) return;
+        const confirmed = await showConfirmModal('Delete Note', 'Are you sure you want to delete this note? This action cannot be undone.');
+        if (!confirmed) return;
+
         try {
             await api('item', 'DELETE', { path });
             if (path === currentNote) {
@@ -292,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rename note
     async function renameNote(path) {
         const oldName = path.split('/').pop().replace('.md', '');
-        const newName = prompt('New note name:', oldName);
+        const newName = await showPromptModal('Rename Note', 'Enter new name:', oldName);
         if (!newName || newName === oldName) return;
 
         try {
@@ -313,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Duplicate note
     async function duplicateNote(path) {
         const oldName = path.split('/').pop().replace('.md', '');
-        const newName = prompt('Duplicate as:', `${oldName} (copy)`);
+        const newName = await showPromptModal('Duplicate Note', 'Enter name for the copy:', `${oldName} (copy)`);
         if (!newName) return;
 
         try {
@@ -357,6 +510,37 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(url);
         } catch (error) {
             alert('Failed to download note');
+        }
+    }
+
+    // Export note as PDF
+    async function exportNoteToPdf(path = currentNote) {
+        if (!path) return;
+        try {
+            const data = await api(`note?path=${encodeURIComponent(path)}`);
+            const filename = path.split('/').pop().replace('.md', '.pdf');
+
+            // Create a styled container for PDF generation
+            const container = document.createElement('div');
+            container.innerHTML = data.content || '';
+            container.style.padding = '20px';
+            container.style.fontFamily = 'Arial, sans-serif';
+            container.style.fontSize = '12pt';
+            container.style.lineHeight = '1.6';
+            container.style.color = '#333';
+
+            const opt = {
+                margin: 15,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            await html2pdf().set(opt).from(container).save();
+        } catch (error) {
+            console.error('PDF export error:', error);
+            alert('Failed to export PDF');
         }
     }
 
@@ -499,7 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newPath = targetPath ? `${targetPath}/${fileName}` : fileName;
 
-        if (confirm(`Move "${fileName}" to ${targetLabel}?`)) {
+        const confirmed = await showConfirmModal('Move Note', `Move "${fileName}" to ${targetLabel}?`);
+        if (confirmed) {
             try {
                 const response = await fetch('/admin/api/notes/move', {
                     method: 'POST',
@@ -554,6 +739,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </button>
+                    <button id="batchExportPdf" class="btn btn-sm" title="Export selected as PDF">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <path d="M9 15h6" />
+                            <path d="M9 11h6" />
+                        </svg>
+                    </button>
                     <button id="batchDelete" class="btn btn-sm btn-danger" title="Delete selected notes">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"/>
@@ -565,6 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelector('.notes-sidebar').insertBefore(batchDiv, notesList);
 
                 document.getElementById('batchDownload').addEventListener('click', batchDownload);
+                document.getElementById('batchExportPdf').addEventListener('click', batchExportPdf);
                 document.getElementById('batchDelete').addEventListener('click', batchDelete);
                 document.getElementById('clearSelection').addEventListener('click', clearSelection);
             } else {
@@ -601,8 +795,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function batchExportPdf() {
+        for (const path of selectedNotes) {
+            try {
+                await exportNoteToPdf(path);
+                // Delay between PDF exports to avoid browser issues
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+                console.error('Failed to export PDF:', path);
+            }
+        }
+    }
+
     async function batchDelete() {
-        if (!confirm(`Delete ${selectedNotes.size} notes?`)) return;
+        const confirmed = await showConfirmModal('Delete Notes', `Are you sure you want to delete ${selectedNotes.size} notes? This action cannot be undone.`);
+        if (!confirmed) return;
 
         for (const path of selectedNotes) {
             try {
@@ -697,6 +904,9 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'download':
                 await downloadNote(target);
                 break;
+            case 'exportPdf':
+                await exportNoteToPdf(target);
+                break;
             case 'delete':
                 await deleteNote(target);
                 break;
@@ -714,6 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveBtn.addEventListener('click', saveNote);
     deleteBtn.addEventListener('click', () => deleteNote());
     downloadBtn.addEventListener('click', () => downloadNote());
+    exportPdfBtn.addEventListener('click', () => exportNoteToPdf());
 
     // Preview and Markdown mode toggles
     const previewBtn = document.getElementById('previewBtn');

@@ -83,6 +83,15 @@
                             <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
                     </button>
+                    <button id="exportPdfBtn" class="btn" title="Export as PDF">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <path d="M9 15h6" />
+                            <path d="M9 11h6" />
+                        </svg>
+                    </button>
                     <button id="saveBtn" class="btn btn-primary">Save</button>
                     <button id="deleteBtn" class="btn btn-danger">Delete</button>
                 </div>
@@ -115,6 +124,15 @@
         </svg>
         Download
     </div>
+    <div class="context-menu-item" data-action="exportPdf">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M9 15h6" />
+            <path d="M9 11h6" />
+        </svg>
+        Export as PDF
+    </div>
     <div class="context-menu-divider"></div>
     <div class="context-menu-item danger" data-action="delete">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -125,5 +143,78 @@
     </div>
 </div>
 
+<!-- Unsaved Changes Modal -->
+<div id="unsavedModal" class="notes-modal-overlay">
+    <div class="notes-modal">
+        <div class="notes-modal-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <h3>Unsaved Changes</h3>
+        </div>
+        <p class="notes-modal-message">You have unsaved changes. What would you like to do?</p>
+        <div class="notes-modal-actions">
+            <button id="modalSaveBtn" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Save & Continue
+            </button>
+            <button id="modalDiscardBtn" class="btn btn-danger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Discard
+            </button>
+            <button id="modalCancelBtn" class="btn">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Prompt Modal (for input dialogs) -->
+<div id="promptModal" class="notes-modal-overlay">
+    <div class="notes-modal">
+        <div class="notes-modal-header">
+            <svg id="promptIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+            <h3 id="promptTitle">Enter Name</h3>
+        </div>
+        <p id="promptMessage" class="notes-modal-message">Please enter a name:</p>
+        <input type="text" id="promptInput" class="notes-modal-input" placeholder="Enter name...">
+        <div class="notes-modal-actions">
+            <button id="promptConfirmBtn" class="btn btn-primary">Confirm</button>
+            <button id="promptCancelBtn" class="btn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Modal (for confirmations) -->
+<div id="confirmModal" class="notes-modal-overlay">
+    <div class="notes-modal">
+        <div class="notes-modal-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <h3 id="confirmTitle">Confirm Action</h3>
+        </div>
+        <p id="confirmMessage" class="notes-modal-message">Are you sure?</p>
+        <div class="notes-modal-actions">
+            <button id="confirmYesBtn" class="btn btn-primary">Yes</button>
+            <button id="confirmNoBtn" class="btn">No</button>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 {% endblock %}

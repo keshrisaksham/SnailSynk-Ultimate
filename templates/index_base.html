@@ -58,8 +58,7 @@
 
             <div class="header-actions">
                 {% if is_admin %}
-                <a href="{{ url_for('admin.monitoring') }}" class="btn btn-secondary" title="Admin Dashboard">Admin
-                    Apps</a>
+                <a href="{{ url_for('admin.monitoring') }}" class="btn btn-secondary" title="Admin Dashboard">Apps</a>
                 <a href="{{ url_for('admin.logout') }}" class="btn btn-secondary">Logout</a>
                 {% else %}
                 <a href="{{ url_for('admin.login') }}" class="btn btn-secondary" title="Admin Login">Admin?</a>

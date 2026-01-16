@@ -1,97 +1,281 @@
 # 🐌 SnailSynk - Ultimate Edition
 
-SnailSynk is a powerful, self-hosted web application that transforms your local network into a seamless hub for real-time collaboration, advanced file management, and even a bit of fun. Built with Python, Flask, and WebSockets, it's designed to be the ultimate productivity and utility suite for all your devices, no internet connection required.
+<p align="center">
+  <img src="static/icon/favicon.png" alt="SnailSynk Logo" width="120" />
+</p>
 
-***
-## ✨ Key Features
+<p align="center">
+  <strong>A powerful, self-hosted web application for real-time collaboration, file management, and productivity — all on your local network.</strong>
+</p>
 
-SnailSynk is more than just a file-sharing tool; it's a comprehensive suite of integrated utilities designed for a modern workflow.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python" alt="Python 3.8+"/>
+  <img src="https://img.shields.io/badge/Flask-WebSocket-green?style=flat-square&logo=flask" alt="Flask"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License"/>
+</p>
+
+---
+
+## 🌟 What is SnailSynk?
+
+SnailSynk transforms your local network into a seamless hub for real-time collaboration, advanced file management, and productivity. Built with Python, Flask, and WebSockets, it works **without requiring an internet connection** — perfect for home networks, classrooms, or offline environments.
+
+---
+
+## ✨ Features
 
 ### 📋 Real-Time Collaboration
 
-* **Synchronized Text Buffer:** A shared text area where content updates in real-time across all connected clients. Perfect for sharing code snippets, links, or notes.
-* **Pinned Messages:** Pin important text from the buffer for quick access and reference.
-* **Real-Time WebSocket Engine:** The core of the app, ensuring all updates—from text changes to new file uploads—are reflected instantly without ever needing to refresh the page.
-<br>
+| Feature | Description |
+|---------|-------------|
+| **Synchronized Text Buffer** | Shared text area with real-time updates across all connected clients. Perfect for code snippets, links, or notes. |
+| **Pinned Messages** | Pin up to 5 important messages for quick access and reference. |
+| **Markdown Preview** | Toggle markdown preview and full markdown editor mode. |
+| **AI Chat Integration** | Chat with Google Gemini AI directly within the app (requires API key). |
+| **WebSocket Engine** | All updates (text, files, pins) are instantly reflected without page refresh. |
+
 ### 📂 Advanced File Management
 
-* **Drag & Drop Uploads:** A modern, intuitive upload area with a progress bar. You can even paste an image from your clipboard to prepare it for upload.
-* **In-Browser Previews:** Preview images directly in the browser. Previews are automatically disabled for password-protected files.
-* **Dynamic File Directory:** Instantly search and sort your shared files by name or modification date. The list updates in real-time as other users upload files.
-* **Powerful Admin Controls:**
-\*   Password-protect individual files.
-\*   Perform bulk actions: lock, unlock, and delete multiple files at once with intuitive checkbox selection.
-<br>
+| Feature | Description |
+|---------|-------------|
+| **Drag & Drop Uploads** | Modern upload area with progress bar and cancel support. |
+| **Clipboard Paste** | Paste images directly from clipboard to upload. |
+| **Image Previews** | Hover over image files to see live previews. |
+| **Real-Time File List** | File directory updates instantly for all users when files are uploaded/deleted. |
+| **Search & Sort** | Search files by name, sort by name or date (newest/oldest). |
+| **Password Protection** | Lock individual files with password protection. |
+| **Batch Operations** | Select multiple files to lock, unlock, download as ZIP, or delete. |
+
 ### 🎮 Game Arcade
-* **Multi-Player Tic-Tac-Toe:** A classic two-player strategy game.
-* **Single-Player Classics:** Includes timeless games like Snake and Flappy Bird to play during a break.
-<br>
-### 🛡️ Admin Dashboard & Notes Editor
 
-* **Live Client Monitoring:** See a list of all devices currently connected to SnailSynk.
-* **IP Access Control:** Block and unblock specific IP addresses from accessing the application.
-* **Full-Featured Notes Editor:** A private, admin-only notes sanctuary with a desktop-grade experience:
+| Game | Description |
+|------|-------------|
+| **Tic-Tac-Toe** | Classic two-player strategy game. |
+| **Snake** | The classic arcade game. |
+| **Flappy Bird** | Test your reflexes! |
 
-\*   **WYSIWYG Markdown Editor:** A beautiful and intuitive editor that defaults to a rich-text view.
+### 🛡️ Admin Dashboard
 
-\*   **File & Folder System:** Organize your notes in a hierarchical file tree.
+| Feature | Description |
+|---------|-------------|
+| **Live Client Monitoring** | See all connected devices in real-time with IP addresses and connection time. |
+| **Activity Timeline** | View recent actions (uploads, downloads, buffer updates). |
+| **Activity Graphs** | Visual charts showing action distribution and activity over time. |
+| **IP Access Control** | Block/unblock specific IP addresses from accessing the app. |
+| **Action Logs** | Searchable log of all user actions. |
 
-\*   **Drag & Drop Management:** Effortlessly move files and folders to reorganize your notes.
+### 📝 Notes Editor (Admin Only)
 
-\*   **Right-Click Context Menu:** Access all essential actions like rename, delete, and download.
+| Feature | Description |
+|---------|-------------|
+| **WYSIWYG Editor** | Rich-text editing with Quill.js. |
+| **File & Folder System** | Hierarchical organization with drag-and-drop. |
+| **Context Menu** | Right-click for rename, duplicate, download, delete. |
+| **Batch Actions** | Select multiple notes to download or delete. |
+| **Markdown Export** | Notes export as `.md` files. |
 
-\*   **Multi-Select & Batch Actions:** Use checkboxes to select multiple items to download or delete at once.
+### 📱 Mobile Responsive
 
-### 📱 Seamless Connectivity & UX
+- Fully responsive design optimized for phones and tablets
+- Touch-friendly buttons and navigation
+- Bottom navigation bar on mobile admin pages
+- Scrollable panels and stacked layouts
 
-* **QR Code Sharing:** Instantly generate a QR code to allow mobile devices to connect to SnailSynk or your local Wi-Fi network.
-<br>
-***
+### 🔗 Connectivity Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dynamic QR Codes** | Generate QR codes to share the app URL or WiFi credentials. |
+| **Theme Toggle** | Light/Dark mode with smooth transitions. |
+| **Accent Color Picker** | Customize the app's accent color. |
+
+---
 
 ## 💻 Technology Stack
 
-* **Backend:** Python 3, Flask, Flask-SocketIO
-* **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3
-* **Real-Time Engine:** Socket.IO
-* **Editor:** Toast UI Editor
-* **Dependencies:** Pyperclip, Argon2, python-dotenv, Werkzeug
+| Category | Technologies |
+|----------|-------------|
+| **Backend** | Python 3.8+, Flask, Flask-SocketIO, Gevent |
+| **Frontend** | Vanilla JavaScript (ES6+), HTML5, CSS3 |
+| **Real-Time** | Socket.IO, WebSockets |
+| **Editor** | Quill.js (Notes), EasyMDE (Buffer) |
+| **AI** | Google Generative AI (Gemini) |
+| **Security** | Argon2 password hashing, session management |
+| **Utilities** | python-dotenv, pyperclip, qrcode, rich |
 
-***
+---
 
 ## 🚀 Getting Started
 
-Follow these steps to get SnailSynk running on your local machine.
-
 ### Prerequisites
 
-* **Git:** To clone the repository.
-* **Python 3.8+** and **pip** installed on your system.
+- **Git** (to clone the repository)
+- **Python 3.8+** with pip
 
-### Installation & Setup
+### Quick Installation
 
-**Step 1: Clone the Repository**
+#### Windows
 
+```batch
+# Clone the repository
+git clone https://github.com/YawnByte/SnailSynk-Ultimate-NG.git
+cd SnailSynk-Ultimate-NG
+
+# Run the installer
+Snail.bat
 ```
-git clone https://github.com/keshrisaksham/SnailSynk-Ultimate.git 
-```
-**Step 2: "THE" Installation**
 
-Change Directory :
+The batch file will:
+1. Install all Python dependencies
+2. Prompt for admin username and password
+3. Prompt for Gemini API key (optional, for AI chat)
+4. Prompt for port number (default: 9000)
+5. Create a desktop shortcut
+6. Start the application
+
+#### Linux/macOS
+
 ```bash
-cd SnailSynk-Ultimate
+# Clone the repository
+git clone https://github.com/YawnByte/SnailSynk-Ultimate-NG.git
+cd SnailSynk-Ultimate-NG
+
+# Make the script executable and run
+chmod +x Snail.sh
+./Snail.sh
 ```
-Locate the Snail.bat file and **run it.**
 
-The .bat file would automatically create a desktop shortcut, install the dependencies ask you once to put the Admin details ( username and password that you want to set for the administrator user) and do all the boring things for you, later you'll just have to click on the SnailSynk shortcut to run it (or you can run it using the SnailSynk.py file in-case you do not like desktop shortcuts (like me)).
+### Manual Installation
 
-**Step 3: Run the Application**
+```bash
+# Clone the repository
+git clone https://github.com/YawnByte/SnailSynk-Ultimate-NG.git
+cd SnailSynk-Ultimate-NG
 
-It doesn't run, c'mon it is a computer based software! duh!
-***
+# Create virtual environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# or
+.\venv\Scripts\activate  # Windows
 
-## 🌐 How to Use
+# Install dependencies
+pip install -r requirements.txt
 
-Once the server is running, your terminal will display two access points:
+# Create .env file with your configuration
+echo "FLASK_SECRET_KEY=your-secret-key-here" > .env
+echo "SNAILSYNK_PORT=9000" >> .env
+echo "GEMINI_API_KEY=your-api-key-here" >> .env  # Optional
 
-1. **From the host computer:** Open a web browser and navigate to `http://localhost:portnumer`
-2. **From other devices (phone, tablet, laptop):** Make sure they are on the **same Wi-Fi network**, then open a browser and navigate to the IP address shown in the terminal (e.g., `http://192.168.1.1:0000`).
+# Run the application
+python SnailSynk.py
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FLASK_SECRET_KEY` | Flask session secret key | Auto-generated |
+| `SNAILSYNK_PORT` | Port to run the server on | `9000` |
+| `GEMINI_API_KEY` | Google Gemini API key for AI chat | None (optional) |
+
+### First-Time Setup
+
+On first run, you'll be prompted to create an admin account. These credentials are stored securely using Argon2 password hashing.
+
+---
+
+## 🌐 Usage
+
+Once the server is running, your terminal will display two access URLs:
+
+1. **From the host computer:**
+   ```
+   http://localhost:9000
+   ```
+
+2. **From other devices on the same network:**
+   ```
+   http://<your-ip>:9000
+   ```
+   Example: `http://192.168.1.100:9000`
+
+### Accessing Admin Features
+
+1. Click **"Admin?"** in the header
+2. Enter your admin credentials
+3. Access the Dashboard, Monitoring, and Notes Editor
+
+---
+
+## 📁 Project Structure
+
+```
+SnailSynk-Ultimate-NG/
+├── backbone/              # Core managers (files, content, users, notes)
+├── routes/                # Flask blueprints (index, admin, AI chat)
+├── static/
+│   ├── css/              # Stylesheets (common, mobile, admin)
+│   ├── js/               # JavaScript (index, admin, notes)
+│   └── icon/             # Icons and images
+├── templates/
+│   ├── admin/            # Admin templates (dashboard, notes, login)
+│   └── *.html            # Index templates
+├── SnailSynk.py          # Main application entry point
+├── Snail.bat             # Windows installer/launcher
+├── Snail.sh              # Linux/macOS installer/launcher
+├── requirements.txt      # Python dependencies
+└── README.md             # This file
+```
+
+---
+
+## 🔒 Security Features
+
+- **Password Protection**: Lock individual files with secure passwords
+- **Argon2 Hashing**: Admin passwords are securely hashed
+- **Session Management**: Secure Flask sessions with expiration
+- **IP Blocking**: Block malicious IPs from accessing the app
+- **Path Sanitization**: Prevents directory traversal attacks
+
+---
+
+## 📝 File Storage
+
+Files are stored in:
+- **Windows:** `C:\Users\<username>\Downloads\SnailSynk\files\`
+- **Linux/macOS:** `~/Downloads/SnailSynk/files/`
+
+Notes are stored in:
+- **Windows:** `C:\Users\<username>\Downloads\SnailSynk\notes\`
+- **Linux/macOS:** `~/Downloads/SnailSynk/notes/`
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 👤 Author
+
+**YawnByte** (Saksham)
+
+- GitHub: [@YawnByte](https://github.com/YawnByte)
+- Instagram: [@Sometimes.Saksham](https://www.instagram.com/Sometimes.Saksham/)
+
+---
+
+<p align="center">
+  Made with ❤️ and ☕
+</p>
