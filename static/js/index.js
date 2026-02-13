@@ -1,4 +1,36 @@
 // static/js/index.js
+// --- UTILITY: Robust clipboard copy with fallbacks (works on Linux/HTTP) ---
+async function copyToClipboard(text) {
+    // Try modern clipboard API first (requires HTTPS or localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.warn('Clipboard API failed:', err);
+        }
+    }
+
+    // Fallback: execCommand with temporary textarea (works on HTTP)
+    try {
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = text;
+        tempTextArea.style.position = 'fixed';
+        tempTextArea.style.left = '-9999px';
+        tempTextArea.style.top = '0';
+        tempTextArea.setAttribute('readonly', '');
+        document.body.appendChild(tempTextArea);
+        tempTextArea.focus();
+        tempTextArea.setSelectionRange(0, text.length);
+        const copied = document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+        if (copied) return true;
+    } catch (err) {
+        console.warn('execCommand copy failed:', err);
+    }
+
+    return false;
+}
 
 // --- UTILITY: Create a flash message ---
 function flash(message, category = 'info') {
@@ -24,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const PIN_LIMIT = 5;
+    const PIN_LIMIT = 10;
     const socket = io();
 
     // --- DOM ELEMENT SELECTION ---
@@ -32,11 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const commitBtn = document.getElementById('commitBtn');
     const selectBtn = document.getElementById('selectBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const pasteBtn = document.getElementById('pasteBtn');
     const pinBtn = document.getElementById('pinBtn');
     const clipboardStatus = document.getElementById('clipboardStatus');
     const textMeta = document.getElementById('textMeta');
     const selectTextAction = document.getElementById('selectTextAction');
-    const viewToggleSwitch = document.getElementById('viewToggleSwitch');
+    const viewBtnShared = document.getElementById('viewBtnShared');
+    const viewBtnPinned = document.getElementById('viewBtnPinned');
     const sharedTextView = document.getElementById('shared-text-view');
     const pinnedMessagesView = document.getElementById('pinned-messages-view');
     const pinnedMessagesContainer = document.getElementById('pinned-messages-container');
@@ -45,14 +79,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadSectionPanel = document.querySelector('.download-section .panel-body');
 
     // AI Chat Elements
-    const geminiToggleBtn = document.getElementById('geminiToggleBtn');
+    const viewBtnAiChat = document.getElementById('viewBtnAiChat');
     const aiChatView = document.getElementById('ai-chat-view');
     const aiChatMessages = document.getElementById('aiChatMessages');
     const aiChatInput = document.getElementById('aiChatInput');
     const aiChatSendBtn = document.getElementById('aiChatSendBtn');
 
-    // AI Chat State
-    let isAiChatMode = false;
+    // View State
+    let currentView = 'shared'; // 'shared' | 'pinned' | 'ai'
     let aiChatHistory = [];
 
     // AI Chat scrollbar auto-hide functionality
@@ -435,7 +469,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateTextMeta() { if (sharedTextArea && textMeta) { const charCount = sharedTextArea.value.length; textMeta.textContent = `${charCount} chars`; updatePinButtonState(); } }
     async function loadSharedText() { if (!sharedTextArea) return; try { const response = await fetch('/api/shared-text'); if (!response.ok) throw new Error(`Server error: ${response.status}`); const result = await response.json(); if (result.success) { sharedTextArea.value = result.text; updateTextMeta(); } else { throw new Error(result.error || 'Unknown server error'); } } catch (error) { console.error('Error loading shared text:', error); setStatus(`[ERR] Load failed: ${error.message}`, 'error'); sharedTextArea.value = 'Error loading content.'; sharedTextArea.disabled = true; if (commitBtn) commitBtn.disabled = true; } }
     async function commitSharedText() { if (!sharedTextArea || !commitBtn) return; const textToSend = isEditorMode && easyMDEInstance ? easyMDEInstance.value() : sharedTextArea.value; commitBtn.disabled = true; commitBtn.textContent = 'Committing...'; setStatus('', 'info'); try { const response = await fetch('/api/shared-text', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: textToSend }), }); if (!response.ok) throw new Error(`Server error: ${response.status}`); const result = await response.json(); if (result.success) { setStatus('[OK] Buffer updated.', 'success'); } else { throw new Error(result.error || 'Unknown server error'); } } catch (error) { console.error('Error committing shared text:', error); setStatus(`[ERR] Commit failed: ${error.message}`, 'error'); } finally { commitBtn.disabled = false; commitBtn.textContent = 'Commit'; } }
-    function clearSharedText() { if (sharedTextArea) { if (isEditorMode && easyMDEInstance) { easyMDEInstance.value(''); } else { sharedTextArea.value = ''; } updateTextMeta(); commitSharedText(); setStatus('[OK] Buffer cleared.', 'success'); } }
+    function clearSharedText() {
+        if (sharedTextArea) {
+            if (isEditorMode && easyMDEInstance) { easyMDEInstance.value(''); } else { sharedTextArea.value = ''; }
+            // Exit preview mode if active
+            if (isPreviewMode) {
+                isPreviewMode = false;
+                markdownPreview.classList.add('view-hidden');
+                markdownPreview.innerHTML = '';
+                sharedTextArea.classList.remove('preview-active');
+                previewBtn.classList.remove('active');
+            }
+            updateTextMeta(); commitSharedText(); setStatus('[OK] Buffer cleared.', 'success');
+        }
+    }
     async function selectSharedText() {
         if (!sharedTextArea || !selectBtn) return;
         setStatus('', 'info');
@@ -497,36 +544,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PINNED MESSAGES LOGIC ---
     function updatePinButtonState(pinCount) { if (!pinBtn) return; const currentPinCount = pinCount ?? (pinnedMessagesContainer.children.length - (pinnedMessagesContainer.querySelector('.no-pins-message') ? 1 : 0)); const isTextAreaEmpty = sharedTextArea.value.trim() === ''; if (currentPinCount >= PIN_LIMIT) { pinBtn.disabled = true; pinBtn.title = `Pin limit of ${PIN_LIMIT} reached.`; } else if (isTextAreaEmpty) { pinBtn.disabled = true; pinBtn.title = 'Cannot pin empty text.'; } else { pinBtn.disabled = false; pinBtn.title = 'Pin the current text'; } }
-    async function handlePinClick() { const textToPin = sharedTextArea.value; if (textToPin.trim() === '' || pinBtn.disabled) return; pinBtn.disabled = true; try { const response = await fetch('/api/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: textToPin }), }); const result = await response.json(); if (!result.success) { throw new Error(result.error || 'Failed to pin message.'); } setStatus('[OK] Message pinned.', 'success'); if (viewToggleSwitch) { viewToggleSwitch.checked = true; toggleViews(); } } catch (error) { console.error('Error pinning message:', error); setStatus(`[ERR] ${error.message}`, 'error'); } }
+    async function handlePinClick() { const textToPin = sharedTextArea.value; if (textToPin.trim() === '' || pinBtn.disabled) return; pinBtn.disabled = true; try { const response = await fetch('/api/pins', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: textToPin }), }); const result = await response.json(); if (!result.success) { throw new Error(result.error || 'Failed to pin message.'); } flash('[OK] Message pinned successfully.', 'success'); setStatus('[OK] Message pinned.', 'success'); } catch (error) { console.error('Error pinning message:', error); setStatus(`[ERR] ${error.message}`, 'error'); } }
     async function handleUnpinClick(pinId) { try { const response = await fetch(`/api/pins/${pinId}`, { method: 'DELETE' }); const result = await response.json(); if (!result.success) { throw new Error(result.error || 'Failed to unpin message.'); } setStatus('[OK] Message unpinned.', 'success'); } catch (error) { console.error('Error unpinning message:', error); setStatus(`[ERR] ${error.message}`, 'error'); } }
-    function renderPinnedMessages(pins = []) { if (!pinnedMessagesContainer) return; pinnedMessagesContainer.innerHTML = ''; if (pins.length === 0) { pinnedMessagesContainer.innerHTML = '<p class="no-pins-message">No pinned messages. Type something in the shared buffer and click "Pin" to save it here.</p>'; return; } pins.forEach(pin => { const card = document.createElement('div'); card.className = 'pin-card'; card.dataset.id = pin.id; card.innerHTML = `<div class="pin-card-content">${window.AppUtils.escapeHTML(pin.text)}</div><div class="pin-card-actions"><button class="btn btn-secondary copy-pin-btn" title="Copy to Clipboard">Copy</button><button class="btn btn-secondary select-pin-btn" title="Select Text">Select</button><button class="btn btn-icon unpin-btn" title="Unpin Message"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button></div>`; pinnedMessagesContainer.appendChild(card); }); }
-    function toggleViews() {
-        if (isAiChatMode) {
-            // AI Chat mode is active
-            sharedTextView.classList.add('view-hidden');
-            pinnedMessagesView.classList.add('view-hidden');
+    function renderPinnedMessages(pins = []) {
+        if (!pinnedMessagesContainer) return;
+        pinnedMessagesContainer.innerHTML = '';
+        if (pins.length === 0) {
+            pinnedMessagesContainer.innerHTML = '<p class="no-pins-message">No pinned messages. Type something in the shared buffer and click "Pin" to save it here.</p>';
+            return;
+        }
+        pins.forEach(pin => {
+            const card = document.createElement('div');
+            card.className = 'pin-card';
+            card.dataset.id = pin.id;
+
+            const content = document.createElement('div');
+            content.className = 'pin-card-content';
+            content.textContent = pin.text;
+            card.appendChild(content);
+
+            const actions = document.createElement('div');
+            actions.className = 'pin-card-actions';
+            actions.innerHTML = `<button class="btn btn-secondary copy-pin-btn" title="Copy to Clipboard">Copy</button><button class="btn btn-secondary enlarge-pin-btn" title="Expand/Collapse">Enlarge</button><button class="btn btn-icon unpin-btn" title="Unpin Message"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>`;
+            card.appendChild(actions);
+
+            pinnedMessagesContainer.appendChild(card);
+        });
+    }
+    function switchView(view) {
+        currentView = view;
+        // Hide all views
+        sharedTextView.classList.add('view-hidden');
+        pinnedMessagesView.classList.add('view-hidden');
+        aiChatView.classList.add('view-hidden');
+        // Deactivate all buttons
+        if (viewBtnShared) viewBtnShared.classList.remove('active');
+        if (viewBtnPinned) viewBtnPinned.classList.remove('active');
+        if (viewBtnAiChat) viewBtnAiChat.classList.remove('active');
+        // Show the selected view
+        if (view === 'shared') {
+            sharedTextView.classList.remove('view-hidden');
+            if (viewBtnShared) viewBtnShared.classList.add('active');
+            bufferTitle.textContent = 'Shared Text Buffer';
+        } else if (view === 'pinned') {
+            pinnedMessagesView.classList.remove('view-hidden');
+            if (viewBtnPinned) viewBtnPinned.classList.add('active');
+            bufferTitle.textContent = 'Pinned Buffer';
+        } else if (view === 'ai') {
             aiChatView.classList.remove('view-hidden');
+            if (viewBtnAiChat) viewBtnAiChat.classList.add('active');
             bufferTitle.textContent = 'AI Chat';
-            geminiToggleBtn.classList.add('active');
-        } else {
-            // Normal mode: toggle between shared and pinned
-            const isPinnedView = viewToggleSwitch.checked;
-            sharedTextView.classList.toggle('view-hidden', isPinnedView);
-            pinnedMessagesView.classList.toggle('view-hidden', !isPinnedView);
-            aiChatView.classList.add('view-hidden');
-            bufferTitle.textContent = isPinnedView ? 'Pinned Buffer' : 'Shared Text Buffer';
-            geminiToggleBtn.classList.remove('active');
         }
     }
+    // Backward-compat alias
+    function toggleViews() { switchView(currentView); }
 
     if (pinnedMessagesContainer) {
         pinnedMessagesContainer.addEventListener('click', async (e) => {
             const copyBtn = e.target.closest('.copy-pin-btn');
-            const selectBtn = e.target.closest('.select-pin-btn');
+            const enlargeBtn = e.target.closest('.enlarge-pin-btn');
             const unpinBtn = e.target.closest('.unpin-btn');
-            if (copyBtn) { const card = copyBtn.closest('.pin-card'); const content = card.querySelector('.pin-card-content').textContent; try { await navigator.clipboard.writeText(content); setStatus('[OK] Pinned text copied.', 'success'); } catch (err) { setStatus('[ERR] Failed to copy.', 'error'); } }
-            if (selectBtn) { const card = selectBtn.closest('.pin-card'); const contentElement = card.querySelector('.pin-card-content'); selectText(contentElement); setStatus('[OK] Text selected. Use Ctrl+C / Cmd+C.', 'info'); }
+            if (copyBtn) { const card = copyBtn.closest('.pin-card'); const content = card.querySelector('.pin-card-content').textContent; const copied = await copyToClipboard(content); if (copied) { flash('[OK] Pinned text copied.', 'success'); } else { flash('[ERR] Failed to copy.', 'error'); } }
+            if (enlargeBtn) {
+                const card = enlargeBtn.closest('.pin-card');
+                const content = card.querySelector('.pin-card-content');
+                const isExpanded = content.classList.toggle('expanded');
+                enlargeBtn.textContent = isExpanded ? 'Collapse' : 'Enlarge';
+            }
             if (unpinBtn) { const card = unpinBtn.closest('.pin-card'); const pinId = card.dataset.id; if (pinId) { handleUnpinClick(pinId); } }
+        });
+    }
+
+    // Clear All Pins button
+    const clearAllPinsBtn = document.getElementById('clearAllPinsBtn');
+    if (clearAllPinsBtn) {
+        clearAllPinsBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/pins/clear', { method: 'DELETE' });
+                const result = await response.json();
+                if (!result.success) { throw new Error(result.error || 'Failed to clear pins.'); }
+                flash('[OK] All pins cleared.', 'success');
+            } catch (error) {
+                console.error('Error clearing pins:', error);
+                flash(`[ERR] ${error.message}`, 'error');
+            }
         });
     }
 
@@ -714,15 +815,46 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSharedText().then(() => { if (scrollBufferBtn && scrollBufferBtn.handler) setTimeout(() => scrollBufferBtn.handler(), 100); });
         updateTextMeta();
         fileUploaded();
-        toggleViews();
+        switchView('shared');
         if (document.getElementById('downloadSelectedForm')) {
             reinitializeFileActions();
         }
         if (commitBtn) commitBtn.addEventListener('click', commitSharedText);
         if (selectBtn) selectBtn.addEventListener('click', selectSharedText);
         if (clearBtn) clearBtn.addEventListener('click', clearSharedText);
+        if (pasteBtn) {
+            pasteBtn.addEventListener('click', async () => {
+                try {
+                    let pastedText = null;
+                    if (navigator.clipboard && navigator.clipboard.readText) {
+                        try {
+                            pastedText = await navigator.clipboard.readText();
+                        } catch (err) {
+                            console.warn('Clipboard readText failed:', err);
+                        }
+                    }
+                    if (pastedText !== null) {
+                        if (isEditorMode && easyMDEInstance) {
+                            const current = easyMDEInstance.value();
+                            easyMDEInstance.value(current + pastedText);
+                        } else {
+                            sharedTextArea.value += pastedText;
+                        }
+                        updateTextMeta();
+                        setStatus('[OK] Text pasted from clipboard.', 'success');
+                    } else {
+                        setStatus('[INFO] Could not read clipboard. Use Ctrl+V to paste.', 'info');
+                    }
+                } catch (error) {
+                    console.error('Paste failed:', error);
+                    setStatus('[INFO] Could not read clipboard. Use Ctrl+V to paste.', 'info');
+                }
+            });
+        }
         if (pinBtn) pinBtn.addEventListener('click', handlePinClick);
-        if (viewToggleSwitch) viewToggleSwitch.addEventListener('change', toggleViews);
+        if (viewBtnShared) viewBtnShared.addEventListener('click', () => switchView('shared'));
+        if (viewBtnPinned) viewBtnPinned.addEventListener('click', () => switchView('pinned'));
+        if (viewBtnAiChat) viewBtnAiChat.addEventListener('click', () => switchView('ai'));
         if (fileInput) fileInput.addEventListener('change', fileUploaded);
 
         // --- QOL: Enter to Commit, Shift+Enter for Newline ---
@@ -851,43 +983,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- AI CHAT FUNCTIONALITY ---
         function parseMarkdown(text) {
-            // Simple markdown parser for AI responses
-            let html = text;
-
-            // Code blocks with language
-            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-                return `<pre><code class="language-${lang || 'text'}">${escapeHtml(code.trim())}</code></pre>`;
-            });
-
-            // Inline code
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-            // Bold
-            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-
-            // Italic
-            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-            html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-
-            // Headers
-            html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-            html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-            html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-
-            // Unordered lists
-            html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
-            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-            // Ordered lists
-            html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-            // Line breaks
-            html = html.replace(/\n\n/g, '<br><br>');
-            html = html.replace(/\n/g, '<br>');
-
-            return html;
+            // Use marked.js for proper markdown rendering
+            if (typeof marked !== 'undefined') {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                return marked.parse(text);
+            }
+            // Minimal fallback if marked.js fails to load
+            return text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
         }
 
         function escapeHtml(text) {
@@ -897,12 +1002,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function toggleAiChatMode() {
-            isAiChatMode = !isAiChatMode;
-            if (isAiChatMode) {
-                // Switching to AI chat mode - turn off pinned view
-                viewToggleSwitch.checked = false;
+            if (currentView === 'ai') {
+                switchView('shared');
+            } else {
+                switchView('ai');
             }
-            toggleViews();
         }
 
         function renderAiChatMessage(message, sender) {
@@ -914,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Use innerHTML for AI messages to render markdown, textContent for user messages
             if (sender === 'ai') {
-                bubble.innerHTML = parseMarkdown(message);
+                bubble.innerHTML = '<div class="markdown-content">' + parseMarkdown(message) + '</div>';
             } else {
                 bubble.textContent = message;
             }
@@ -922,6 +1026,27 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create action buttons container
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'ai-chat-actions';
+
+            // Copy button icon SVGs
+            const copyIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+            const checkIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+            // Copy button (for both user and AI messages)
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'ai-chat-action-btn copy-btn';
+            copyBtn.title = 'Copy message';
+            copyBtn.innerHTML = copyIconSvg;
+            copyBtn.addEventListener('click', async () => {
+                const copied = await copyToClipboard(message);
+                if (copied) {
+                    copyBtn.innerHTML = checkIconSvg;
+                    flash('[OK] Message copied to clipboard.', 'success');
+                    setTimeout(() => { copyBtn.innerHTML = copyIconSvg; }, 2000);
+                } else {
+                    flash('[ERR] Failed to copy.', 'error');
+                }
+            });
+            actionsDiv.appendChild(copyBtn);
 
             if (sender === 'user') {
                 // Edit button for user messages
@@ -935,25 +1060,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     flash('[OK] Message loaded in input. Edit and resend.', 'info');
                 });
                 actionsDiv.appendChild(editBtn);
-            } else {
-                // Copy button for AI messages
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'ai-chat-action-btn copy-btn';
-                copyBtn.title = 'Copy response';
-                copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-                copyBtn.addEventListener('click', async () => {
-                    try {
-                        await navigator.clipboard.writeText(message);
-                        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                        flash('[OK] Response copied to clipboard.', 'success');
-                        setTimeout(() => {
-                            copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-                        }, 2000);
-                    } catch (err) {
-                        flash('[ERR] Failed to copy.', 'error');
-                    }
-                });
-                actionsDiv.appendChild(copyBtn);
             }
 
             const timestamp = document.createElement('div');
@@ -1079,10 +1185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // AI Chat Event Listeners
-        if (geminiToggleBtn) {
-            geminiToggleBtn.addEventListener('click', toggleAiChatMode);
-        }
+        // AI Chat toggle is handled by viewBtnAiChat click listener bound above
 
         if (aiChatSendBtn) {
             aiChatSendBtn.addEventListener('click', sendAiChatMessage);
@@ -1094,6 +1197,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     sendAiChatMessage();
                 }
+            });
+
+            // Auto-resize textarea as user types
+            aiChatInput.addEventListener('input', () => {
+                aiChatInput.style.height = 'auto';
+                aiChatInput.style.height = Math.min(aiChatInput.scrollHeight, 80) + 'px';
             });
         }
 

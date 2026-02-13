@@ -24,12 +24,63 @@ from routes.routes_admin import init_admin_routes
 from routes.routes_index import init_index_routes, register_socketio_events
 from routes.routes_ai_chat import init_ai_chat_routes
 from routes.utils import get_local_ip
+from routes.ssl_utils import ensure_ssl_cert
 
 # --- Initial Setup ---
 load_dotenv()
 console = Console()
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+# --- Suppress SSL Handshake Errors ---
+# Self-signed certs cause noisy SSL tracebacks when browsers first connect.
+# This filter buffers tracebacks and drops them if they contain SSL errors.
+import sys as _sys
+
+class _SSLStderrFilter:
+    def __init__(self, stream):
+        self._stream = stream
+        self._buffer = []
+        self._buffering = False
+
+    def write(self, text):
+        # Start buffering when a traceback begins
+        if 'Traceback (most recent call last)' in text:
+            self._buffering = True
+            self._buffer = [text]
+            return len(text)
+        
+        if self._buffering:
+            self._buffer.append(text)
+            # Check if this line ends the traceback (an exception line)
+            stripped = text.strip()
+            if stripped and not stripped.startswith('File ') and not stripped.startswith('return ') and not stripped.startswith('result ') and not stripped.startswith('read ') and not stripped.startswith('line ') and not stripped.startswith('self.') and not stripped.startswith('super()') and not stripped.startswith('listeners') and not stripped == '~~' and not text.startswith(' ') and not text.startswith('\t') and 'Error' in stripped:
+                self._buffering = False
+                # Check if any buffered line contains SSL error
+                full_text = ''.join(self._buffer)
+                if 'SSLV3_ALERT' in full_text or 'CERTIFICATE_UNKNOWN' in full_text or ('ssl.SSLError' in full_text and 'alert' in full_text):
+                    self._buffer = []
+                    return len(text)
+                # Not an SSL error — flush the buffer
+                for line in self._buffer:
+                    self._stream.write(line)
+                self._buffer = []
+                return len(text)
+            return len(text)
+        
+        # Also suppress "Removing descriptor" lines that follow SSL errors
+        if 'Removing descriptor' in text:
+            return len(text)
+        
+        return self._stream.write(text)
+
+    def flush(self):
+        self._stream.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+_sys.stderr = _SSLStderrFilter(_sys.stderr)
 history_logger = logging.getLogger('history')
 history_logger.setLevel(logging.INFO)
 history_logger.addHandler(RichHandler(console=console, show_path=False, show_level=False, show_time=True, markup=True))
@@ -86,7 +137,7 @@ def before_request_handler():
     # Blocklist Check
     if not request.path.startswith('/static') and request.remote_addr != '127.0.0.1':
         if blocklist_manager.is_blocked(request.remote_addr):
-            return "<h1>Forbidden</h1><p>Your IP address has been banned.</p>", 403
+            return render_template('error.html', error_code=403, error_title="Forbidden", error_description="Your IP address has been banned by the administrator."), 403
     
     # Page Access Logging
     ignored_paths = ('/static/', '/api/', '/favicon.ico', '/socket.io/', '/admin/api/')
@@ -132,6 +183,10 @@ def handle_error(e):
 if __name__ == '__main__':
     APP_PORT = int(os.environ.get('SNAILSYNK_PORT', 9000))
     local_ip = get_local_ip()
+    
+    # Generate or load SSL certificate
+    certfile, keyfile = ensure_ssl_cert(app.instance_path)
+    
     clipboard_status = (
         Text("Enabled", style="bold green") if PYCLIP_AVAILABLE 
         else Text("Disabled (pyperclip not installed)", style="bold yellow")
@@ -141,14 +196,17 @@ if __name__ == '__main__':
     info_text.append("© 2025 YawnByte. All rights reserved.\n", style="bright_black")
     info_text.append("Clipboard Support: ", style="default")
     info_text.append(clipboard_status)
+    info_text.append("\n")
+    info_text.append("HTTPS: ", style="default")
+    info_text.append("Enabled (Self-Signed)", style="bold green")
 
     panel_content = f"""
-[bold]Access from this computer:[/] [cyan]http://localhost:{APP_PORT}[/]
-[bold]Access from other devices:[/] [cyan]http://{local_ip}:{APP_PORT}[/]
+[bold]Access from this computer:[/] [cyan]https://localhost:{APP_PORT}[/]
+[bold]Access from other devices:[/] [cyan]https://{local_ip}:{APP_PORT}[/]
     """
 
     console.print(Panel(info_text, title="[bold #946eeA]SnailSynk[/]", subtitle="[#9e82b4]v2.0[/]", border_style="magenta"))
     console.print(Panel(panel_content.strip(), title="[bold #62A0EA]Access Points[/]", border_style="blue"))
     console.print(Rule("[bold white]Application Log[/]", style="white"))
 
-    socketio.run(app, host='0.0.0.0', port=APP_PORT)
+    socketio.run(app, host='0.0.0.0', port=APP_PORT, certfile=certfile, keyfile=keyfile)

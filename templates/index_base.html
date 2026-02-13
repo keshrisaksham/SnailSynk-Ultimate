@@ -22,10 +22,8 @@
             const theme = localStorage.getItem('theme');
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
-            } else if (theme === 'light') {
+            } else {
                 document.documentElement.classList.remove('dark');
-            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.classList.add('dark');
             }
             // Load accent color
             const accent = localStorage.getItem('accent') || 'red';
@@ -203,11 +201,9 @@
                     </svg></button>
             </div>
             <div class="modal-body">
-                <div class="view-toggle" style="justify-content: center;">
-                    <span class="toggle-label">Server IP</span>
-                    <label class="switch"><input type="checkbox" id="connectViewToggle"><span
-                            class="slider round"></span></label>
-                    <span class="toggle-label">Wi-Fi</span>
+                <div class="modal-toggle-buttons">
+                    <button id="showIpBtn" class="btn btn-secondary active">Server IP</button>
+                    <button id="showWifiBtn" class="btn btn-secondary">Wi-Fi</button>
                 </div>
                 <div id="ipConnectView">
                     <p class="modal-description">Scan this QR code to open this page on your mobile device.</p>
@@ -269,6 +265,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='js/backbone.js') }}"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}"></script>

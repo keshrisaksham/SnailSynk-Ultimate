@@ -10,12 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }[match]));
     }
 
+    function getAccentColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--c-primary').trim();
+    }
+
     async function fetchQrCode(type, payload = {}) {
         try {
             const response = await fetch('/api/qr_code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, ...payload })
+                body: JSON.stringify({ type, color: getAccentColor(), ...payload })
             });
             if (!response.ok) throw new Error('Server returned an error.');
             const result = await response.json();
@@ -126,7 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (connectModal) {
         const openConnectBtn = document.getElementById('connectBtn');
         const closeConnectBtn = document.getElementById('closeConnectModal');
-        const connectViewToggle = document.getElementById('connectViewToggle');
+        const showIpBtn = document.getElementById('showIpBtn');
+        const showWifiBtn = document.getElementById('showWifiBtn');
         const ipConnectView = document.getElementById('ipConnectView');
         const wifiConnectView = document.getElementById('wifiConnectView');
         const ipQrContainer = document.getElementById('ipQrContainer');
@@ -145,10 +150,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === connectModal) closeModal();
         });
 
-        connectViewToggle.addEventListener('change', () => {
-            const isWifiView = connectViewToggle.checked;
-            ipConnectView.classList.toggle('view-hidden', isWifiView);
-            wifiConnectView.classList.toggle('view-hidden', !isWifiView);
+        showIpBtn.addEventListener('click', () => {
+            ipConnectView.classList.remove('view-hidden');
+            wifiConnectView.classList.add('view-hidden');
+            showIpBtn.classList.add('active');
+            showWifiBtn.classList.remove('active');
+        });
+
+        showWifiBtn.addEventListener('click', () => {
+            ipConnectView.classList.add('view-hidden');
+            wifiConnectView.classList.remove('view-hidden');
+            showIpBtn.classList.remove('active');
+            showWifiBtn.classList.add('active');
         });
 
         wifiQrForm.addEventListener('submit', async (e) => {

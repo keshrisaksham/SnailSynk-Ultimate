@@ -7,3 +7,4 @@ rich
 gevent
 pyperclip
 google-generativeai
+cryptography

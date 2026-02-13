@@ -8,7 +8,7 @@ if PYCLIP_AVAILABLE:
 
 class ContentManager:
     """Manages all text content: the shared buffer and pinned messages."""
-    def __init__(self, pin_limit=5):
+    def __init__(self, pin_limit=10):
         self.shared_text = ""
         self.pins = []
         self.limit = pin_limit
@@ -53,3 +53,10 @@ class ContentManager:
             return self.pins, None
         else:
             return None, "Pin not found."
+
+    def clear_all_pins(self, remote_addr):
+        count = len(self.pins)
+        self.pins = []
+        ip_color = "yellow" if remote_addr != "127.0.0.1" else "cyan"
+        log_history("All Pins Cleared", f"{count} pins cleared by [{ip_color}]{remote_addr}[/]")
+        return self.pins, None

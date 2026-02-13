@@ -200,13 +200,13 @@ def generate_qr_code():
     qr_type = data.get('type')
     logo_path = "static/icon/favicon.png"
     qr_data_string = ""
-    qr_color = "#dc2626"  # Red accent color
+    qr_color = data.get('color', '#dc2626')
     
     if qr_type == 'ip':
         # Get dynamic port from the request
         host_port = request.host.split(':')
         port = host_port[1] if len(host_port) > 1 else '9000'
-        qr_data_string = f"http://{get_local_ip()}:{port}"
+        qr_data_string = f"https://{get_local_ip()}:{port}"
     elif qr_type == 'wifi':
         if not data.get('ssid'): return jsonify(success=False, error="SSID is required."), 400
         qr_data_string = f"WIFI:T:WPA;S:{data.get('ssid')};P:{data.get('password')};;"
@@ -262,6 +262,12 @@ def add_pin():
 def delete_pin(pin_id):
     updated_pins, error = content_manager.delete_pin(pin_id, request.remote_addr)
     if error: return jsonify(success=False, error=error), 404
+    socketio.emit('pins_updated', {'pins': updated_pins})
+    return jsonify(success=True, pins=updated_pins)
+
+@main_bp.route('/api/pins/clear', methods=['DELETE'])
+def clear_all_pins():
+    updated_pins, error = content_manager.clear_all_pins(request.remote_addr)
     socketio.emit('pins_updated', {'pins': updated_pins})
     return jsonify(success=True, pins=updated_pins)
 

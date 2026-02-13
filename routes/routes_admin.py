@@ -57,7 +57,7 @@ def login():
             session.permanent = True
             flash('You were successfully logged in.', 'success')
             next_url = request.args.get('next')
-            return redirect(next_url) if next_url and is_safe_url(next_url) else redirect(url_for('main.index'))
+            return redirect(next_url) if next_url and is_safe_url(next_url) else redirect(url_for('admin.monitoring'))
         else:
             flash('Invalid username or password.', 'error')
             return redirect(url_for('admin.login'))

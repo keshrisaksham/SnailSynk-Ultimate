@@ -21,17 +21,26 @@
     <section class="panel shared-text-section">
         <div class="panel-header panel-header-with-toggle">
             <h2 id="buffer-title">Shared Text Buffer</h2>
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <button id="geminiToggleBtn" class="gemini-toggle-btn" title="Toggle AI Chat">
-                    <img src="{{ url_for('static', filename='icon/christmas-stars.svg') }}" alt="AI Chat"
-                        class="gemini-icon">
+            <div class="segmented-toggle">
+                <button id="viewBtnShared" class="seg-btn active" title="Shared Text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
                 </button>
-                <div class="view-toggle">
-                    <span class="toggle-label">Shared</span>
-                    <label class="switch"><input type="checkbox" id="viewToggleSwitch"><span
-                            class="slider round"></span></label>
-                    <span class="toggle-label">Pinned</span>
-                </div>
+                <button id="viewBtnPinned" class="seg-btn" title="Pinned Messages">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="17" x2="12" y2="22"></line>
+                        <path
+                            d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z">
+                        </path>
+                    </svg>
+                </button>
+                <button id="viewBtnAiChat" class="seg-btn" title="AI Chat">
+                    <img src="{{ url_for('static', filename='icon/christmas-stars.svg') }}" alt="AI" class="seg-icon">
+                </button>
             </div>
         </div>
         <div class="panel-body">
@@ -66,15 +75,20 @@
                 </div>
                 <div class="form-actions buffer-actions">
                     <button id="commitBtn" class="btn btn-primary">Commit</button>
+                    <button id="pasteBtn" class="btn btn-secondary" title="Paste from clipboard">Paste</button>
                     <button id="pinBtn" class="btn btn-secondary" title="Pin the current text">Pin</button>
-                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
                     <button id="selectBtn" class="btn btn-secondary">Select</button>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
                     <button id="editorBtn" class="btn btn-secondary" title="Toggle Markdown Editor">Editor</button>
                 </div>
                 <div id="clipboardStatus" class="clipboard-status"></div>
             </div>
             <div id="pinned-messages-view" class="view-hidden">
-                <p class="section-description">View and manage your 5 most recent pins.</p>
+                <div class="pinned-header">
+                    <p class="section-description">View and manage your 10 most recent pins.</p>
+                    <button id="clearAllPinsBtn" class="btn btn-secondary btn-sm" title="Clear All Pins">Clear
+                        All</button>
+                </div>
                 <div id="pinned-messages-container" class="pinned-messages-container"></div>
             </div>
             <div id="ai-chat-view" class="view-hidden">
@@ -159,7 +173,7 @@
                 </div>
                 {% endif %}
             </div>
-            <div id="searchContainer" class="search-container">
+            <div id="searchContainer" class="search-container visible">
                 <div class="search-input-wrapper">
                     <input type="text" id="searchInput" placeholder="Search by filename..." autocomplete="off">
                     <button id="clearSearchBtn" class="btn-icon" title="Clear search">
