@@ -11,6 +11,8 @@
     position: relative !important;
     display: flex !important;
     flex-direction: column !important;
+    flex-grow: 1 !important;
+    min-height: 0 !important;
 }
 
 /* Editor toolbar */
@@ -53,8 +55,9 @@
     font-family: var(--font-mono) !important;
     font-size: 0.9rem !important;
     line-height: 1.7 !important;
-    height: calc(550px - 1.5rem) !important;
-    max-height: calc(550px - 1.5rem) !important;
+    flex: 1 1 0 !important;
+    height: auto !important;
+    max-height: none !important;
     width: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
