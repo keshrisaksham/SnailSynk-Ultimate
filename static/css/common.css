@@ -100,6 +100,10 @@ main.app-container {
     gap: 3rem;
 }
 
+.panel.upload-section {
+    max-height: 25rem;
+}
+
 .right-column-wrapper>.panel {
     flex-grow: 1;
     display: flex;
@@ -139,6 +143,8 @@ main.app-container {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .panel-body {
@@ -685,11 +691,12 @@ textarea#sharedTextArea:not(:placeholder-shown)~.text-meta {
 
 /* --- Download Table --- */
 .download-container {
-    margin-top: 1.5rem;
+    margin-top: .5rem;
     padding-top: 0;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    height: 235px;
 }
 
 .table-wrapper {
@@ -729,11 +736,11 @@ thead {
 
 tbody tr {
     border-bottom: 1px solid var(--c-border);
+    height: 50px;
+    /* Enforce equal height for all rows */
 }
 
-tbody tr:last-child {
-    border-bottom: none;
-}
+
 
 th.index-actions {
     text-align: right;
@@ -761,7 +768,8 @@ td>a {
 
 th:first-child,
 td:first-child {
-    width: 1%;
+    width: 50px;
+    min-width: 50px;
     text-align: left;
     padding-left: 1.6rem;
 }
@@ -1432,10 +1440,201 @@ textarea#sharedTextArea:not(:placeholder-shown)~.buffer-scroll-btn.visible {
     font-weight: 500;
 }
 
+/* --- Breadcrumb Navigation --- */
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+    min-height: 1.5rem;
+}
+
+.breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--c-primary);
+    cursor: pointer;
+    padding-top: 1rem;
+    border-radius: var(--r-sm);
+    transition: background-color 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.breadcrumb-item:hover {
+    background: var(--c-primary-muted);
+}
+
+.breadcrumb-item.breadcrumb-active {
+    color: var(--c-text-main);
+    font-weight: 600;
+    cursor: default;
+}
+
+.breadcrumb-item.breadcrumb-active:hover {
+    background: transparent;
+}
+
+.breadcrumb-separator {
+    color: var(--c-text-muted);
+    font-weight: 300;
+    user-select: none;
+    padding-top: 1rem;
+}
+
+/* --- Folder Row Styling --- */
+.folder-row td {
+    cursor: pointer;
+    padding: 0.75rem;
+}
+
+.folder-row td:first-child {
+    padding-left: 1.6rem;
+}
+
+.folder-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--c-text-main);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.folder-link:hover {
+    color: var(--c-primary);
+}
+
+.folder-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+    stroke: var(--c-primary);
+}
+
+.folder-row:hover {
+    background-color: var(--c-primary-muted);
+}
+
+/* --- Custom Sort Dropdown --- */
+.custom-sort-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-sort-options {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 160px;
+    background-color: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 50;
+    padding: 0.35rem;
+    animation: sortDropdownFadeIn 0.15s ease;
+}
+
+.custom-sort-options.visible {
+    display: block;
+}
+
+@keyframes sortDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.custom-sort-option {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.85rem;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--c-text-main);
+    background: none;
+    border: none;
+    border-radius: calc(var(--radius) - 2px);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.custom-sort-option:hover {
+    background-color: var(--c-bg);
+}
+
+.custom-sort-option.active {
+    background-color: var(--c-primary);
+    color: var(--c-primary-text);
+}
+
+.custom-sort-option.active:hover {
+    background-color: #262626;
+}
+
+/* --- Folder Picker (Move Modal) --- */
+.folder-picker-list {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    margin-top: 0.5rem;
+}
+
+.folder-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--c-text-main);
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--c-border);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.15s ease;
+}
+
+.folder-picker-item:last-child {
+    border-bottom: none;
+}
+
+.folder-picker-item:hover {
+    background-color: var(--c-bg);
+}
+
+.folder-picker-item.selected {
+    background-color: var(--c-primary);
+    color: var(--c-primary-text);
+}
+
+.folder-picker-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
 /* --- Content Height Constraints --- */
 .download-container .table-wrapper {
     /* Prevents the download list from stretching the panel. */
-    max-height: 260px;
+    height: 100%;
 }
 
 /* --- Custom Scrollbar Styling --- */
@@ -1474,31 +1673,7 @@ textarea#sharedTextArea:not(:placeholder-shown)~.buffer-scroll-btn.visible {
     /* Provides spacing between the sort dropdown and search icon */
 }
 
-#sortFilesDropdown {
-    -webkit-appearance: none;
-    /* Removes default browser styling on Chrome/Safari */
-    -moz-appearance: none;
-    /* Removes default browser styling on Firefox */
-    appearance: none;
-    /* Removes default browser styling */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.6rem center;
-    background-size: 1em;
-    padding-right: 2rem;
-    /* Make space for the arrow icon */
-    padding-left: 1rem;
-    background-color: var(--c-surface);
-    /* Match theme background */
-    color: var(--c-text-main);
-    /* Match theme text color */
-    border-color: var(--c-border);
-}
-
-#sortFilesDropdown:hover {
-    border-color: var(--c-border-hover);
-    background-color: var(--c-bg);
-}
+/* Old #sortFilesDropdown styles removed — replaced by .custom-sort-dropdown above */
 
 /* --- AI Chat Interface --- */
 #ai-chat-view {
@@ -1907,4 +2082,178 @@ textarea#sharedTextArea:not(:placeholder-shown)~.buffer-scroll-btn.visible {
 .ai-chat-empty p {
     margin: 0;
     font-size: 0.9rem;
+}
+
+/* ===== SHARED SNAIL DIALOG MODALS ===== */
+.snail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.snail-modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.snail-modal {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    padding: 1.75rem;
+    max-width: 420px;
+    width: 90%;
+    transform: translateY(-10px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    will-change: transform, opacity;
+}
+
+.snail-modal-overlay.visible .snail-modal {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+html.dark .snail-modal {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.snail-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.snail-modal-header svg {
+    color: var(--c-primary);
+    flex-shrink: 0;
+}
+
+.snail-modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--c-text-main);
+}
+
+.snail-modal-message {
+    margin: 0 0 1.25rem 0;
+    color: var(--c-text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.snail-modal-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-bg);
+    color: var(--c-text-main);
+    font-size: 0.9375rem;
+    font-family: var(--font-sans);
+    outline: none;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+
+.snail-modal-input:focus {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.snail-modal-input::placeholder {
+    color: var(--c-text-muted);
+    opacity: 0.6;
+}
+
+.snail-modal-error {
+    color: var(--c-danger, #ef4444);
+    font-size: 0.8125rem;
+    margin: -1rem 0 1rem 0;
+    min-height: 1rem;
+}
+
+.snail-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.snail-modal-actions button {
+    flex: 1;
+    min-width: 100px;
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.snail-modal-actions button:hover {
+    transform: translateY(-1px);
+}
+
+.snail-modal-actions .snail-btn-primary {
+    background: var(--c-primary);
+    border-color: var(--c-primary);
+    color: white;
+}
+
+.snail-modal-actions .snail-btn-primary:hover {
+    filter: brightness(1.1);
+}
+
+.snail-modal-actions .snail-btn-danger {
+    background: var(--c-danger, #ef4444);
+    border-color: var(--c-danger, #ef4444);
+    color: white;
+}
+
+.snail-modal-actions .snail-btn-danger:hover {
+    filter: brightness(1.1);
+}
+
+.snail-modal-actions .snail-btn-cancel:hover {
+    background: var(--c-bg);
+}
+
+@media (max-width: 768px) {
+    .snail-modal {
+        width: 95%;
+        max-width: none;
+        margin: 1rem;
+    }
+
+    .snail-modal-actions {
+        flex-direction: column;
+    }
+
+    .snail-modal-actions button {
+        width: 100%;
+    }
 }

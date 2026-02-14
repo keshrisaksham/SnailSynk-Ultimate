@@ -193,7 +193,7 @@ if __name__ == '__main__':
     )
     
     info_text = Text(justify="center")
-    info_text.append("© 2025 YawnByte. All rights reserved.\n", style="bright_black")
+    info_text.append("© 2026 YawnByte. All rights reserved.\n", style="bright_black")
     info_text.append("Clipboard Support: ", style="default")
     info_text.append(clipboard_status)
     info_text.append("\n")

@@ -35,18 +35,19 @@ def upload_file():
         return jsonify(success=False, error="No file part in the request."), 400
 
     uploaded_files = request.files.getlist('file')
-    success_msgs, error_msgs = file_manager.save_uploaded_files(uploaded_files, request.remote_addr)
+    subpath = request.form.get('subpath', '')
+    is_admin = session.get('admin_logged_in', False)
+    success_msgs, error_msgs = file_manager.save_uploaded_files(uploaded_files, request.remote_addr, subpath=subpath, is_admin=is_admin)
 
     if success_msgs:
-        action_logger.log(request.remote_addr, 'FILE_UPLOAD', {'files': [f.filename for f in uploaded_files if f.filename]})
-        # After a successful upload, get the new file list and broadcast it.
+        action_logger.log(request.remote_addr, 'FILE_UPLOAD', {'files': [f.filename for f in uploaded_files if f.filename], 'path': subpath})
+        # After a successful upload, broadcast for the uploaded path
         try:
-            updated_files = file_manager.list_files()
-            socketio.emit('file_list_updated', {'files': updated_files})
+            updated_files = file_manager.list_files(subpath)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': subpath})
         except Exception as e:
             logging.error(f"Failed to get updated file list after upload: {e}")
 
-    # For an XHR request, return JSON instead of flashing/redirecting
     return jsonify(success=True, messages={'success': success_msgs, 'error': error_msgs})
 
 @main_bp.route('/files/<path:filename>', methods=['GET'])
@@ -60,13 +61,15 @@ def delete_file(filename):
     if not session.get('admin_logged_in'):
         return jsonify(success=False, error="Authentication required."), 403
     decoded_filename = unquote(filename)
+    # Determine the parent subpath for broadcasting
+    parts = decoded_filename.replace('\\', '/').rsplit('/', 1)
+    subpath = parts[0] if len(parts) > 1 else ''
     success, message = file_manager.delete_file(decoded_filename, request.remote_addr)
     if success:
         action_logger.log(request.remote_addr, 'FILE_DELETE', {'file': decoded_filename})
-        # After a successful delete, get the new file list and broadcast it.
         try:
-            updated_files = file_manager.list_files()
-            socketio.emit('file_list_updated', {'files': updated_files})
+            updated_files = file_manager.list_files(subpath)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': subpath})
         except Exception as e:
             logging.error(f"Failed to get updated file list after delete: {e}")
         return jsonify(success=True, message=message)
@@ -75,10 +78,11 @@ def delete_file(filename):
 @main_bp.route('/download_selected', methods=['POST'])
 def download_selected_files():
     selected_filenames = request.form.getlist('selected_files')
+    subpath = request.form.get('subpath', '')
     if not selected_filenames:
         flash("No files selected for download.", "warning")
         return redirect(url_for('.index'))
-    memory_file, skipped = file_manager.zip_selected_files(selected_filenames, request.remote_addr)
+    memory_file, skipped = file_manager.zip_selected_files(selected_filenames, request.remote_addr, subpath=subpath)
     for filename in skipped:
         flash(f"Warning: File '{filename}' was not found and was skipped.", "warning")
     action_logger.log(request.remote_addr, 'FILES_DOWNLOAD_ZIP', {'files': selected_filenames})
@@ -190,6 +194,136 @@ def unlock_batch_files():
         message="Batch unlock operation complete.",
         details={'unlocked': unlocked_files, 'failed': failed_files}
     )
+
+# --- Folder Management API ---
+@main_bp.route('/api/files/list', methods=['GET'])
+def list_files_api():
+    """AJAX endpoint to list files in a given subpath."""
+    subpath = request.args.get('path', '')
+    try:
+        files = file_manager.list_files(subpath)
+        is_folder_locked = file_manager.is_folder_locked(subpath)
+        return jsonify(success=True, files=files, path=subpath, is_folder_locked=is_folder_locked)
+    except Exception as e:
+        logging.error(f"Error listing files for path '{subpath}': {e}")
+        return jsonify(success=False, error="Failed to list files."), 500
+
+@main_bp.route('/api/file/move', methods=['POST'])
+def move_file():
+    if not session.get('admin_logged_in'):
+        return jsonify(success=False, error="Authentication required."), 403
+    data = request.get_json()
+    if not data or 'filename' not in data or 'dest_path' not in data:
+        return jsonify(success=False, error="Missing required fields."), 400
+    filename = data['filename']
+    source_path = data.get('source_path', '')
+    dest_path = data['dest_path']
+    success, message = file_manager.move_file(filename, source_path, dest_path, request.remote_addr)
+    if success:
+        action_logger.log(request.remote_addr, 'FILE_MOVE', {'file': filename, 'from': source_path, 'to': dest_path})
+        # Broadcast updated file lists for both source and destination
+        try:
+            src_files = file_manager.list_files(source_path)
+            socketio.emit('file_list_updated', {'files': src_files, 'path': source_path})
+            dest_files = file_manager.list_files(dest_path)
+            socketio.emit('file_list_updated', {'files': dest_files, 'path': dest_path})
+        except Exception as e:
+            logging.error(f"Failed to broadcast after file move: {e}")
+        return jsonify(success=True, message=message)
+    return jsonify(success=False, error=message), 400
+
+@main_bp.route('/api/folders/list', methods=['GET'])
+def list_all_folders():
+    """Return all folder paths for the folder picker."""
+    try:
+        folders = file_manager.list_all_folders()
+        return jsonify(success=True, folders=folders)
+    except Exception as e:
+        logging.error(f"Error listing all folders: {e}")
+        return jsonify(success=False, error="Failed to list folders."), 500
+
+@main_bp.route('/api/folder/lock', methods=['POST'])
+def lock_folder():
+    if not session.get('admin_logged_in'):
+        return jsonify(success=False, error="Authentication required."), 403
+    data = request.get_json()
+    if not data or 'path' not in data or 'password' not in data:
+        return jsonify(success=False, error="Folder path and password are required."), 400
+    subpath = data['path']
+    password = data['password']
+    success, message = file_manager.lock_folder(subpath, password)
+    if success:
+        action_logger.log(request.remote_addr, 'FOLDER_LOCK', {'path': subpath})
+        try:
+            # Broadcast updated list for the parent folder
+            parent = '/'.join(subpath.replace('\\', '/').split('/')[:-1])
+            updated_files = file_manager.list_files(parent)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': parent})
+        except Exception as e:
+            logging.error(f"Failed to broadcast after folder lock: {e}")
+        return jsonify(success=True, message=message)
+    return jsonify(success=False, error=message), 400
+
+@main_bp.route('/api/folder/unlock', methods=['POST'])
+def unlock_folder():
+    if not session.get('admin_logged_in'):
+        return jsonify(success=False, error="Authentication required."), 403
+    data = request.get_json()
+    if not data or 'path' not in data or 'password' not in data:
+        return jsonify(success=False, error="Folder path and password are required."), 400
+    subpath = data['path']
+    password = data['password']
+    success, message = file_manager.unlock_folder(subpath, password)
+    if success:
+        action_logger.log(request.remote_addr, 'FOLDER_UNLOCK', {'path': subpath})
+        try:
+            parent = '/'.join(subpath.replace('\\', '/').split('/')[:-1])
+            updated_files = file_manager.list_files(parent)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': parent})
+        except Exception as e:
+            logging.error(f"Failed to broadcast after folder unlock: {e}")
+        return jsonify(success=True, message=message)
+    return jsonify(success=False, error=message), 400
+
+@main_bp.route('/api/folder/create', methods=['POST'])
+def create_folder():
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify(success=False, error="Folder name is required."), 400
+    subpath = data.get('path', '')
+    folder_name = data.get('name', '').strip()
+    if not folder_name:
+        return jsonify(success=False, error="Folder name cannot be empty."), 400
+    success, message = file_manager.create_folder(subpath, folder_name, request.remote_addr)
+    if success:
+        action_logger.log(request.remote_addr, 'FOLDER_CREATE', {'name': folder_name, 'path': subpath})
+        try:
+            updated_files = file_manager.list_files(subpath)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': subpath})
+        except Exception as e:
+            logging.error(f"Failed to broadcast after folder creation: {e}")
+        return jsonify(success=True, message=message)
+    return jsonify(success=False, error=message), 400
+
+@main_bp.route('/api/folder/delete', methods=['DELETE'])
+def delete_folder():
+    if not session.get('admin_logged_in'):
+        return jsonify(success=False, error="Authentication required."), 403
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify(success=False, error="Folder name is required."), 400
+    subpath = data.get('path', '')
+    folder_name = data.get('name', '').strip()
+    success, message = file_manager.delete_folder(subpath, folder_name, request.remote_addr)
+    if success:
+        action_logger.log(request.remote_addr, 'FOLDER_DELETE', {'name': folder_name, 'path': subpath})
+        try:
+            updated_files = file_manager.list_files(subpath)
+            socketio.emit('file_list_updated', {'files': updated_files, 'path': subpath})
+        except Exception as e:
+            logging.error(f"Failed to broadcast after folder deletion: {e}")
+        return jsonify(success=True, message=message)
+    return jsonify(success=False, error=message), 400
 
 # --- API and WebSocket Routes ---
 @main_bp.route('/api/qr_code', methods=['POST'])

@@ -240,4 +240,113 @@ document.addEventListener('DOMContentLoaded', () => {
     window.AppUtils = {
         escapeHTML
     };
+
+    // --- SHARED SNAIL DIALOG UTILITIES ---
+    // These are globally accessible via window.snailPrompt / window.snailConfirm
+
+    /**
+     * Show a prompt modal. Returns a Promise<string|null>.
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message
+     * @param {Object} opts - Options: { placeholder, defaultValue, type, confirmText }
+     */
+    window.snailPrompt = function (title, message, opts = {}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('snailPromptModal');
+            const titleEl = document.getElementById('snailPromptTitle');
+            const messageEl = document.getElementById('snailPromptMessage');
+            const inputEl = document.getElementById('snailPromptInput');
+            const errorEl = document.getElementById('snailPromptError');
+            const confirmBtn = document.getElementById('snailPromptConfirm');
+            const cancelBtn = document.getElementById('snailPromptCancel');
+            if (!modal) { resolve(null); return; }
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            inputEl.type = opts.type || 'text';
+            inputEl.placeholder = opts.placeholder || 'Enter value...';
+            inputEl.value = opts.defaultValue || '';
+            errorEl.textContent = '';
+            confirmBtn.textContent = opts.confirmText || 'Confirm';
+            modal.classList.add('visible');
+            setTimeout(() => inputEl.focus(), 100);
+
+            const handleConfirm = () => {
+                const value = inputEl.value.trim();
+                if (!value) {
+                    errorEl.textContent = 'This field cannot be empty.';
+                    return;
+                }
+                cleanup();
+                resolve(value);
+            };
+            const handleCancel = () => { cleanup(); resolve(null); };
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') handleConfirm();
+                if (e.key === 'Escape') handleCancel();
+            };
+            const handleOverlayClick = (e) => {
+                if (e.target === modal) handleCancel();
+            };
+            const cleanup = () => {
+                modal.classList.remove('visible');
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                inputEl.removeEventListener('keydown', handleKeydown);
+                modal.removeEventListener('click', handleOverlayClick);
+            };
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            inputEl.addEventListener('keydown', handleKeydown);
+            modal.addEventListener('click', handleOverlayClick);
+        });
+    };
+
+    /**
+     * Show a confirm modal. Returns a Promise<boolean>.
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message
+     * @param {Object} opts - Options: { danger, confirmText, cancelText }
+     */
+    window.snailConfirm = function (title, message, opts = {}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('snailConfirmModal');
+            const titleEl = document.getElementById('snailConfirmTitle');
+            const messageEl = document.getElementById('snailConfirmMessage');
+            const yesBtn = document.getElementById('snailConfirmYes');
+            const noBtn = document.getElementById('snailConfirmNo');
+            if (!modal) { resolve(false); return; }
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            yesBtn.textContent = opts.confirmText || 'Yes';
+            noBtn.textContent = opts.cancelText || 'Cancel';
+
+            // Apply danger styling if requested
+            yesBtn.classList.remove('snail-btn-primary', 'snail-btn-danger');
+            yesBtn.classList.add(opts.danger ? 'snail-btn-danger' : 'snail-btn-primary');
+
+            modal.classList.add('visible');
+
+            const handleYes = () => { cleanup(); resolve(true); };
+            const handleNo = () => { cleanup(); resolve(false); };
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') handleNo();
+            };
+            const handleOverlayClick = (e) => {
+                if (e.target === modal) handleNo();
+            };
+            const cleanup = () => {
+                modal.classList.remove('visible');
+                yesBtn.removeEventListener('click', handleYes);
+                noBtn.removeEventListener('click', handleNo);
+                document.removeEventListener('keydown', handleKeydown);
+                modal.removeEventListener('click', handleOverlayClick);
+            };
+            yesBtn.addEventListener('click', handleYes);
+            noBtn.addEventListener('click', handleNo);
+            document.addEventListener('keydown', handleKeydown);
+            modal.addEventListener('click', handleOverlayClick);
+        });
+    };
 });

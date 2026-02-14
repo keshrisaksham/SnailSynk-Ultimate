@@ -147,6 +147,7 @@
                             onclick="document.getElementById('fileInput').click();">Choose File</button>
                         <button type="button" id="clearUploadBtn" class="btn btn-secondary"
                             style="display: none;">Clear</button>
+                        <input type="hidden" id="uploadSubpath" name="subpath" value="">
                         <button type="submit" id="uploadButton" class="btn btn-primary" disabled>Upload</button>
                     </div>
                 </form>
@@ -155,14 +156,38 @@
         <section class="panel download-section">
             <div class="panel-header" id="download-panel-header">
                 <h2>Download Directory</h2>
-                {% if files and files|length > 0 %}
                 <div class="panel-header-controls">
-                    <select id="sortFilesDropdown" class="btn" title="Sort files">
-                        <option value="name-asc">Name (A-Z)</option>
-                        <option value="name-desc">Name (Z-A)</option>
-                        <option value="date-desc" selected>Newest First</option>
-                        <option value="date-asc">Oldest First</option>
-                    </select>
+                    <button id="newFolderBtn" class="btn-icon" title="New Folder">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                            <line x1="12" y1="11" x2="12" y2="17"></line>
+                            <line x1="9" y1="14" x2="15" y2="14"></line>
+                        </svg>
+                    </button>
+                    <div class="custom-sort-dropdown" id="customSortDropdown">
+                        <button id="sortToggleBtn" class="btn-icon" title="Sort files">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="4" y1="6" x2="14" y2="6"></line>
+                                <line x1="4" y1="12" x2="11" y2="12"></line>
+                                <line x1="4" y1="18" x2="8" y2="18"></line>
+                                <polyline points="17 10 20 7 17 4"></polyline>
+                                <line x1="20" y1="7" x2="20" y2="20"></line>
+                            </svg>
+                        </button>
+                        <div class="custom-sort-options" id="sortOptions">
+                            <button class="custom-sort-option" data-value="name-asc">Name (A-Z)</button>
+                            <button class="custom-sort-option" data-value="name-desc">Name (Z-A)</button>
+                            <button class="custom-sort-option active" data-value="date-desc">Newest First</button>
+                            <button class="custom-sort-option" data-value="date-asc">Oldest First</button>
+                            <div style="border-top: 1px solid var(--c-border); margin: 0.25rem 0;"></div>
+                            <button class="custom-sort-option active" data-group="folders-first">Folders First</button>
+                            <button class="custom-sort-option" data-group="files-first">Files First</button>
+                            <button class="custom-sort-option" data-group="none">No Grouping</button>
+                        </div>
+                    </div>
                     <button id="searchToggleBtn" class="btn-icon" title="Search files">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -171,9 +196,8 @@
                         </svg>
                     </button>
                 </div>
-                {% endif %}
             </div>
-            <div id="searchContainer" class="search-container visible">
+            <div id="searchContainer" class="search-container">
                 <div class="search-input-wrapper">
                     <input type="text" id="searchInput" placeholder="Search by filename..." autocomplete="off">
                     <button id="clearSearchBtn" class="btn-icon" title="Clear search">
@@ -186,8 +210,19 @@
                 </div>
             </div>
             <div class="panel-body download-section">
-                {% if files and files|length > 0 %}
+                <div class="breadcrumb-nav" id="breadcrumbNav">
+                    <span class="breadcrumb-item breadcrumb-root" data-path="">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="width:1rem;height:1rem;">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Root
+                    </span>
+                </div>
                 <form id="downloadSelectedForm" method="POST" action="{{ url_for('main.download_selected_files') }}">
+                    <input type="hidden" id="downloadSubpath" name="subpath" value="">
                     <div class="download-container">
                         <div class="table-wrapper">
                             <table>
@@ -202,8 +237,45 @@
                                 <tbody id="file-list-body">
                                     {% for file in files %}
                                     {% if file.name is defined %}
+                                    {% if file.type == 'folder' %}
                                     <tr data-file-row="{{ file.encoded_name }}" data-sort-name="{{ file.name.lower() }}"
-                                        data-sort-date="{{ file.mtime }}">
+                                        data-sort-date="{{ file.mtime }}" data-type="folder" class="folder-row">
+                                        <td style="text-align: center;"><input type="checkbox" name="selected_files"
+                                                value="{{ file.name }}" class="file-checkbox" disabled></td>
+                                        <td>
+                                            <a href="javascript:void(0)" class="folder-link"
+                                                data-folder-name="{{ file.name }}"
+                                                data-folder-path="{{ file.encoded_name }}" title="Open {{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round" class="folder-icon">
+                                                    <path
+                                                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                                    </path>
+                                                </svg>
+                                                {{ file.name }}
+                                            </a>
+                                        </td>
+                                        <td class="index-file-actions">
+                                            {% if is_admin %}
+                                            <button type="button" class="btn-icon delete-folder-btn"
+                                                title="Delete folder {{ file.name }}"
+                                                data-folder-name="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path
+                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr data-file-row="{{ file.encoded_name }}" data-sort-name="{{ file.name.lower() }}"
+                                        data-sort-date="{{ file.mtime }}" data-type="file">
                                         <td style="text-align: center;"><input type="checkbox" name="selected_files"
                                                 value="{{ file.name }}" class="file-checkbox"></td>
                                         <td><a href="{{ url_for('main.download_file', filename=file.encoded_name) }}"
@@ -228,7 +300,6 @@
                                                 title="{{ 'Unlock File' if file.is_locked else 'Lock File' }}"
                                                 data-filename="{{ file.encoded_name }}">
                                                 {% if file.is_locked %}
-                                                <!-- Locked Icon -->
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -236,7 +307,6 @@
                                                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                                 </svg>
                                                 {% else %}
-                                                <!-- Unlocked Icon -->
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -259,6 +329,7 @@
                                             {% endif %}
                                         </td>
                                     </tr>
+                                    {% endif %}
                                     {% else %}
                                     <tr>
                                         <td colspan="3" style="text-align: center; color: var(--c-error);">Error:
@@ -310,9 +381,6 @@
                         {% endif %}
                     </div>
                 </form>
-                {% else %}
-                <p class="no-files">No files available. Upload a file to get started!</p>
-                {% endif %}
             </div>
         </section>
     </div>

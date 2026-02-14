@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileListBody = document.getElementById('file-list-body');
     const downloadSectionPanel = document.querySelector('.download-section .panel-body');
 
+    // Folder navigation state
+    let currentPath = '';
+
     // AI Chat Elements
     const viewBtnAiChat = document.getElementById('viewBtnAiChat');
     const aiChatView = document.getElementById('ai-chat-view');
@@ -132,12 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePinButtonState(data.pins.length);
     });
     socket.on('file_list_updated', (data) => {
+        // Only re-render if the broadcast is for the path we're currently viewing
+        const broadcastPath = data.path || '';
+        if (broadcastPath !== currentPath) return;
         if (data.files && fileListBody) {
             flash('File list has been updated in real-time.', 'info');
             renderFileList(data.files);
             reinitializeFileActions();
         } else if (data.files && !fileListBody) {
-            // If the file list doesn't exist, a reload is the only way to create it.
             window.location.reload();
         }
     });
@@ -167,57 +172,257 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- DYNAMIC FILE LIST RENDERING ---
-    function renderFileList(files = []) {
+    function renderFileList(items = []) {
         if (!fileListBody) return;
 
-        // Determine if the user is an admin by checking for an admin-only element
         const isAdmin = !!document.getElementById('lockSelectedBtn');
-        fileListBody.innerHTML = ''; // Clear the existing list
+        fileListBody.innerHTML = '';
 
-        if (files.length === 0) {
-            downloadSectionPanel.innerHTML = '<p class="no-files">No files available. Upload a file to get started!</p>';
-            const headerControls = document.querySelector('.panel-header-controls');
-            if (headerControls) headerControls.style.display = 'none';
+        if (items.length === 0 && currentPath === '') {
+            fileListBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--c-text-muted);">No files or folders. Upload a file or create a folder to get started!</td></tr>';
+            return;
+        }
+        if (items.length === 0 && currentPath !== '') {
+            fileListBody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--c-text-muted);">This folder is empty.</td></tr>';
             return;
         }
 
-        let fileRowsHtml = '';
-        files.forEach(file => {
-            const lockedAttr = file.is_locked ? 'true' : 'false';
-            const lockTitle = file.is_locked ? 'Unlock File' : 'Lock File';
-            const lockIcon = file.is_locked
-                ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
-
-            const adminButtons = `
-                <button type="button" class="btn-icon file-lock-btn" title="${lockTitle}" data-filename="${file.encoded_name}">${lockIcon}</button>
-                <button type="button" class="btn-icon delete-file-btn" title="Delete ${file.name}" data-filename="${file.encoded_name}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-            `;
-
-            fileRowsHtml += `
-                <tr data-file-row="${file.encoded_name}" data-sort-name="${file.name.toLowerCase()}" data-sort-date="${file.mtime}">
-                    <td style="text-align: center;"><input type="checkbox" name="selected_files" value="${file.name}" class="file-checkbox"></td>
-                    <td><a href="/files/${file.encoded_name}" download title="Download ${file.name}" class="file-link-preview" data-filename="${file.encoded_name}" data-locked="${lockedAttr}">${file.name}</a></td>
-                    <td class="index-file-actions">
-                        <a href="/files/${file.encoded_name}" class="btn-icon file-download-link" title="Download ${file.name}" data-filename="${file.encoded_name}" data-locked="${lockedAttr}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
-                        ${isAdmin ? adminButtons : ''}
-                    </td>
-                </tr>
-            `;
+        let rowsHtml = '';
+        items.forEach(item => {
+            if (item.type === 'folder') {
+                const folderLocked = item.is_locked;
+                const folderLockBtn = isAdmin ? `
+                    <button type="button" class="btn-icon folder-lock-btn" title="${folderLocked ? 'Unlock Folder' : 'Lock Folder'}" data-folder-path="${item.encoded_name}" data-locked="${folderLocked}">
+                        ${folderLocked
+                        ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+                        : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
+                    }
+                    </button>` : '';
+                const folderDeleteBtn = isAdmin ? `
+                    <button type="button" class="btn-icon delete-folder-btn" title="Delete folder ${item.name}" data-folder-name="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>` : '';
+                const lockedBadge = folderLocked ? ' <span style="color:var(--c-text-muted); font-size:0.75rem;">🔒</span>' : '';
+                rowsHtml += `
+                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-type="folder" class="folder-row">
+                        <td style="text-align: center;"><input type="checkbox" class="file-checkbox" disabled></td>
+                        <td>
+                            <a href="javascript:void(0)" class="folder-link" data-folder-name="${item.name}" data-folder-path="${item.encoded_name}" title="Open ${item.name}">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                ${item.name}${lockedBadge}
+                            </a>
+                        </td>
+                        <td class="index-file-actions">${folderLockBtn}${folderDeleteBtn}</td>
+                    </tr>`;
+            } else {
+                const lockedAttr = item.is_locked ? 'true' : 'false';
+                const lockTitle = item.is_locked ? 'Unlock File' : 'Lock File';
+                const lockIcon = item.is_locked
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
+                const adminButtons = isAdmin ? `
+                    <button type="button" class="btn-icon file-move-btn" title="Move ${item.name}" data-filename="${item.name}" data-encoded="${item.encoded_name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+                    </button>
+                    <button type="button" class="btn-icon file-lock-btn" title="${lockTitle}" data-filename="${item.encoded_name}">${lockIcon}</button>
+                    <button type="button" class="btn-icon delete-file-btn" title="Delete ${item.name}" data-filename="${item.encoded_name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>` : '';
+                rowsHtml += `
+                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-type="file">
+                        <td style="text-align: center;"><input type="checkbox" name="selected_files" value="${item.name}" class="file-checkbox"></td>
+                        <td><a href="/files/${item.encoded_name}" download title="Download ${item.name}" class="file-link-preview" data-filename="${item.encoded_name}" data-locked="${lockedAttr}">${item.name}</a></td>
+                        <td class="index-file-actions">
+                            <a href="/files/${item.encoded_name}" class="btn-icon file-download-link" title="Download ${item.name}" data-filename="${item.encoded_name}" data-locked="${lockedAttr}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
+                            ${adminButtons}
+                        </td>
+                    </tr>`;
+            }
         });
-        // Add the noResultsRow element
-        fileRowsHtml += '<tr id="noResultsRow" style="display: none;"><td colspan="3" style="text-align: center;">No matching files found.</td></tr>';
-        fileListBody.innerHTML = fileRowsHtml;
+        rowsHtml += '<tr id="noResultsRow" style="display: none;"><td colspan="3" style="text-align: center;">No matching files found.</td></tr>';
+        fileListBody.innerHTML = rowsHtml;
     }
 
     function reinitializeFileActions() {
         updateDownloadSelectedButtonState();
         rebindImagePreviews();
         rebindSearchAndSort();
-        // Event delegation handles single file actions (delete, lock, download) so we don't need to re-bind them individually.
+        bindFolderActions();
     }
+
+    // --- FOLDER NAVIGATION ---
+    function navigateToFolder(path) {
+        currentPath = path;
+        // Sync hidden subpath inputs
+        const uploadSubpath = document.getElementById('uploadSubpath');
+        const downloadSubpath = document.getElementById('downloadSubpath');
+        if (uploadSubpath) uploadSubpath.value = path;
+        if (downloadSubpath) downloadSubpath.value = path;
+
+        // Update upload description to show current upload target
+        const uploadDesc = document.querySelector('.upload-section .section-description');
+        if (uploadDesc) {
+            uploadDesc.textContent = path
+                ? `Uploading to folder: ${path}`
+                : 'Select or drag files to upload to the shared directory.';
+        }
+
+        renderBreadcrumbs(path);
+
+        fetch(`/api/files/list?path=${encodeURIComponent(path)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderFileList(data.files);
+                    reinitializeFileActions();
+                    // Update upload section visibility based on folder lock state
+                    const uploadSection = document.querySelector('.upload-section');
+                    const isAdminUser = !!document.getElementById('lockSelectedBtn');
+                    if (uploadSection) {
+                        if (!isAdminUser && data.is_folder_locked) {
+                            uploadSection.style.display = 'none';
+                        } else {
+                            uploadSection.style.display = '';
+                        }
+                    }
+                } else {
+                    flash(`[ERR] ${data.error || 'Failed to load folder.'}`, 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error navigating to folder:', err);
+                flash('[ERR] Failed to load folder.', 'error');
+            });
+    }
+
+    function renderBreadcrumbs(path) {
+        const breadcrumbNav = document.getElementById('breadcrumbNav');
+        if (!breadcrumbNav) return;
+
+        const homeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1rem;height:1rem;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
+
+        let html = `<span class="breadcrumb-item breadcrumb-root ${path === '' ? 'breadcrumb-active' : ''}" data-path="">${homeIcon} Root</span>`;
+
+        if (path) {
+            const parts = path.split('/');
+            let accumulated = '';
+            parts.forEach((part, i) => {
+                accumulated += (i > 0 ? '/' : '') + part;
+                const isLast = i === parts.length - 1;
+                html += `<span class="breadcrumb-separator">/</span>`;
+                html += `<span class="breadcrumb-item ${isLast ? 'breadcrumb-active' : ''}" data-path="${accumulated}">${decodeURIComponent(part)}</span>`;
+            });
+        }
+        breadcrumbNav.innerHTML = html;
+
+        // Bind click on breadcrumb items
+        breadcrumbNav.querySelectorAll('.breadcrumb-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const targetPath = item.dataset.path;
+                navigateToFolder(targetPath);
+            });
+        });
+    }
+
+    function bindFolderActions() {
+        // Folder link clicks (navigate into)
+        document.querySelectorAll('.folder-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const folderPath = decodeURIComponent(link.dataset.folderPath);
+                navigateToFolder(folderPath);
+            });
+        });
+
+        // Folder delete buttons
+        document.querySelectorAll('.delete-folder-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const folderName = btn.dataset.folderName;
+                const confirmed = await snailConfirm('Delete Folder', `Are you sure you want to permanently delete the folder "${folderName}" and ALL its contents?`, { danger: true, confirmText: 'Delete' });
+                if (!confirmed) return;
+                setStatus(`[INFO] Deleting folder '${folderName}'...`, 'info', 60000);
+                try {
+                    const response = await fetch('/api/folder/delete', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: currentPath, name: folderName })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to delete folder.');
+                    setStatus(`[OK] Folder '${folderName}' deleted.`, 'success');
+                } catch (error) {
+                    console.error('Error deleting folder:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // Folder lock/unlock buttons (admin only)
+        document.querySelectorAll('.folder-lock-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const folderPath = decodeURIComponent(btn.dataset.folderPath);
+                const isLocked = btn.dataset.locked === 'true';
+                const endpoint = isLocked ? '/api/folder/unlock' : '/api/folder/lock';
+                const action = isLocked ? 'Unlock' : 'Lock';
+                const password = await snailPrompt(`${action} Folder`, `Enter a password to ${action.toLowerCase()} this folder:`, { type: 'password', placeholder: 'Enter password...', confirmText: action });
+                if (!password) return;
+                setStatus(`[INFO] ${action}ing folder...`, 'info', 60000);
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: folderPath, password })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || `Failed to ${action.toLowerCase()} folder.`);
+                    setStatus(`[OK] ${result.message}`, 'success');
+                } catch (error) {
+                    console.error(`Error ${action.toLowerCase()}ing folder:`, error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // File move buttons (admin only)
+        document.querySelectorAll('.file-move-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const filename = btn.dataset.filename;
+                openMoveModal(filename, currentPath);
+            });
+        });
+    }
+
+    // New Folder button handler
+    const newFolderBtn = document.getElementById('newFolderBtn');
+    if (newFolderBtn) {
+        newFolderBtn.addEventListener('click', async () => {
+            const folderName = await snailPrompt('New Folder', 'Enter a name for the new folder:', { placeholder: 'Folder name...', confirmText: 'Create' });
+            if (!folderName) return;
+            setStatus(`[INFO] Creating folder '${folderName}'...`, 'info', 60000);
+            try {
+                const response = await fetch('/api/folder/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: currentPath, name: folderName })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to create folder.');
+                setStatus(`[OK] ${result.message}`, 'success');
+            } catch (error) {
+                console.error('Error creating folder:', error);
+                setStatus(`[ERR] ${error.message}`, 'error');
+            }
+        });
+    }
+
+    // Initial binding for server-rendered folder actions
+    bindFolderActions();
 
     function rebindImagePreviews() {
         const imagePreviewPopup = document.getElementById('imagePreviewPopup');
@@ -284,28 +489,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function rebindSearchAndSort() {
-        // Re-run the sort function to order the new list
-        const sortFilesDropdown = document.getElementById('sortFilesDropdown');
-        if (sortFilesDropdown) {
-            const sortTableRows = () => {
-                const sortValue = sortFilesDropdown.value;
-                const rows = Array.from(fileListBody.querySelectorAll('tr[data-file-row]'));
-                rows.sort((a, b) => {
-                    const nameA = a.dataset.sortName;
-                    const nameB = b.dataset.sortName;
-                    const dateA = parseFloat(a.dataset.sortDate);
-                    const dateB = parseFloat(b.dataset.sortDate);
-                    switch (sortValue) {
-                        case 'name-asc': return nameA.localeCompare(nameB);
-                        case 'name-desc': return nameB.localeCompare(nameA);
-                        case 'date-asc': return dateA - dateB;
-                        case 'date-desc': default: return dateB - dateA;
-                    }
-                });
-                rows.forEach(row => fileListBody.appendChild(row));
-            };
-            sortFilesDropdown.onchange = sortTableRows; // Re-assign event handler
-            sortTableRows(); // Sort immediately
+        // Re-run the sort function to order the new list using the custom dropdown
+        if (typeof sortTableRowsCustom === 'function') {
+            sortTableRowsCustom();
         }
 
         // Re-apply the current search query
@@ -397,6 +583,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             for (const file of fileInput.files) {
                 formData.append('file', file);
+            }
+            // Include current folder subpath so files upload to the active folder
+            const subpathInput = document.getElementById('uploadSubpath');
+            if (subpathInput && subpathInput.value) {
+                formData.append('subpath', subpathInput.value);
             }
             uploadButton.disabled = true;
             uploadButton.textContent = 'Uploading...';
@@ -657,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateDownloadSelectedButtonState() {
         const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
         const selectAllFilesCheckbox = document.getElementById('selectAllFilesCheckbox');
-        const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+        const fileCheckboxes = document.querySelectorAll('.file-checkbox:not(:disabled)');
 
         if (!downloadSelectedBtn || !fileCheckboxes) return;
         const anySelected = Array.from(fileCheckboxes).some(cb => cb.checked);
@@ -681,7 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.body.addEventListener('change', (e) => {
         if (e.target.matches('#selectAllFilesCheckbox')) {
-            const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+            const fileCheckboxes = document.querySelectorAll('.file-checkbox:not(:disabled)');
             fileCheckboxes.forEach(cb => {
                 if (!cb.closest('tr').classList.contains('row-hidden')) {
                     cb.checked = e.target.checked;
@@ -695,6 +886,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SEARCH AND SORT BINDINGS ---
+    const sortToggleBtn = document.getElementById('sortToggleBtn');
+    const sortOptionsPanel = document.getElementById('sortOptions');
+    let currentSortValue = 'date-desc'; // Default sort value
+    let currentGroupValue = 'folders-first'; // Default group value
+
+    if (sortToggleBtn && sortOptionsPanel) {
+        sortToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sortOptionsPanel.classList.toggle('visible');
+        });
+
+        sortOptionsPanel.addEventListener('click', (e) => {
+            const option = e.target.closest('.custom-sort-option');
+            if (!option) return;
+
+            if (option.dataset.value) {
+                // Sort option clicked — update only sort active states
+                sortOptionsPanel.querySelectorAll('.custom-sort-option[data-value]').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                currentSortValue = option.dataset.value;
+            } else if (option.dataset.group) {
+                // Group option clicked — update only group active states
+                sortOptionsPanel.querySelectorAll('.custom-sort-option[data-group]').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                currentGroupValue = option.dataset.group;
+            }
+            sortOptionsPanel.classList.remove('visible');
+            // Trigger sort
+            sortTableRowsCustom();
+        });
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#customSortDropdown')) {
+                sortOptionsPanel.classList.remove('visible');
+            }
+        });
+    }
+
+    function sortTableRowsCustom() {
+        if (!fileListBody) return;
+        const rows = Array.from(fileListBody.querySelectorAll('tr[data-file-row]'));
+        // 1. Sort by selected sort criteria
+        rows.sort((a, b) => {
+            const nameA = a.dataset.sortName;
+            const nameB = b.dataset.sortName;
+            const dateA = parseFloat(a.dataset.sortDate);
+            const dateB = parseFloat(b.dataset.sortDate);
+            switch (currentSortValue) {
+                case 'name-asc': return nameA.localeCompare(nameB);
+                case 'name-desc': return nameB.localeCompare(nameA);
+                case 'date-asc': return dateA - dateB;
+                case 'date-desc': default: return dateB - dateA;
+            }
+        });
+        // 2. Apply grouping if active
+        if (currentGroupValue === 'folders-first') {
+            const folders = rows.filter(r => r.dataset.type === 'folder');
+            const files = rows.filter(r => r.dataset.type !== 'folder');
+            [...folders, ...files].forEach(row => fileListBody.appendChild(row));
+        } else if (currentGroupValue === 'files-first') {
+            const folders = rows.filter(r => r.dataset.type === 'folder');
+            const files = rows.filter(r => r.dataset.type !== 'folder');
+            [...files, ...folders].forEach(row => fileListBody.appendChild(row));
+        } else {
+            rows.forEach(row => fileListBody.appendChild(row));
+        }
+    }
     const searchToggleBtn = document.getElementById('searchToggleBtn');
     const searchContainer = document.getElementById('searchContainer');
     const searchInput = document.getElementById('searchInput');
@@ -761,15 +1020,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const filename = lockButton.dataset.filename;
                 const isCurrentlyLocked = lockButton.title.includes('Unlock');
                 if (isCurrentlyLocked) {
-                    if (confirm(`Are you sure you want to unlock "${decodeURIComponent(filename)}"?`)) {
+                    const confirmed = await snailConfirm('Unlock File', `Are you sure you want to unlock "${decodeURIComponent(filename)}"?`);
+                    if (confirmed) {
                         await fetch(`/api/file/unlock/${filename}`, { method: 'POST' });
-                        // No reload needed, websocket will update
                     }
                 } else {
-                    const password = prompt(`Enter a password to lock "${decodeURIComponent(filename)}":`);
+                    const password = await snailPrompt('Lock File', `Enter a password to lock "${decodeURIComponent(filename)}":`, { type: 'password', placeholder: 'Enter password...', confirmText: 'Lock' });
                     if (password) {
                         await fetch(`/api/file/lock/${filename}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-                        // No reload needed, websocket will update
                     }
                 }
             }
@@ -807,6 +1065,97 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) { passwordModalError.textContent = 'Network error. Please try again.'; }
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Download'; }
+        });
+    }
+
+    // --- FILE MOVE MODAL ---
+    const moveFileModal = document.getElementById('moveFileModal');
+    const closeMoveModalBtn = document.getElementById('closeMoveModal');
+    const folderPickerList = document.getElementById('folderPickerList');
+    const confirmMoveBtn = document.getElementById('confirmMoveBtn');
+    const moveFileSource = document.getElementById('moveFileSource');
+    const moveFileName = document.getElementById('moveFileName');
+    const moveModalError = document.getElementById('moveModalError');
+    let selectedDestPath = null;
+
+    function openMoveModal(filename, sourcePath) {
+        if (!moveFileModal) return;
+        moveFileName.value = filename;
+        moveFileSource.value = sourcePath;
+        moveModalError.textContent = '';
+        confirmMoveBtn.disabled = true;
+        selectedDestPath = null;
+        folderPickerList.innerHTML = '<div class="spinner"></div>';
+        moveFileModal.classList.add('visible');
+
+        // Fetch all folders
+        fetch('/api/folders/list')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.error || 'Failed to load folders.');
+                const folderIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+                folderPickerList.innerHTML = data.folders.map(f =>
+                    `<button class="folder-picker-item" data-path="${f.path}" title="${f.name || 'Root'}">${folderIcon} ${f.name || 'Root'}</button>`
+                ).join('');
+
+                // Bind click on each folder item
+                folderPickerList.querySelectorAll('.folder-picker-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        folderPickerList.querySelectorAll('.folder-picker-item').forEach(i => i.classList.remove('selected'));
+                        item.classList.add('selected');
+                        selectedDestPath = item.dataset.path;
+                        confirmMoveBtn.disabled = false;
+                        moveModalError.textContent = '';
+                    });
+                });
+            })
+            .catch(err => {
+                folderPickerList.innerHTML = `<p style="padding:1rem; color:var(--c-error-text);">Error loading folders.</p>`;
+                console.error('Error fetching folders:', err);
+            });
+    }
+
+    function closeMoveModal() {
+        if (moveFileModal) moveFileModal.classList.remove('visible');
+    }
+
+    if (moveFileModal) {
+        closeMoveModalBtn.addEventListener('click', closeMoveModal);
+        moveFileModal.addEventListener('click', (e) => { if (e.target === moveFileModal) closeMoveModal(); });
+    }
+
+    if (confirmMoveBtn) {
+        confirmMoveBtn.addEventListener('click', async () => {
+            if (selectedDestPath === null) return;
+            const filename = moveFileName.value;
+            const sourcePath = moveFileSource.value;
+
+            // Don't move to the same folder
+            if (selectedDestPath === sourcePath) {
+                moveModalError.textContent = 'File is already in this folder.';
+                return;
+            }
+
+            confirmMoveBtn.disabled = true;
+            confirmMoveBtn.textContent = 'Moving...';
+            moveModalError.textContent = '';
+            try {
+                const response = await fetch('/api/file/move', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, source_path: sourcePath, dest_path: selectedDestPath })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to move file.');
+                closeMoveModal();
+                setStatus(`[OK] ${result.message}`, 'success');
+            } catch (error) {
+                moveModalError.textContent = error.message;
+                console.error('Error moving file:', error);
+            } finally {
+                confirmMoveBtn.disabled = false;
+                confirmMoveBtn.textContent = 'Move Here';
+            }
         });
     }
 
@@ -918,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lockSelectedBtn.addEventListener('click', async () => {
                 const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
                 if (selectedFiles.length === 0) return;
-                const password = prompt(`Enter a password to lock the ${selectedFiles.length} selected files:`);
+                const password = await snailPrompt('Lock Files', `Enter a password to lock the ${selectedFiles.length} selected file(s):`, { type: 'password', placeholder: 'Enter password...', confirmText: 'Lock' });
                 if (password) {
                     try {
                         const response = await fetch('/api/files/lock_batch', {
@@ -940,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
             unlockSelectedBtn.addEventListener('click', async () => {
                 const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
                 if (selectedFiles.length === 0) return;
-                const password = prompt(`Enter the password to unlock the ${selectedFiles.length} selected files:`);
+                const password = await snailPrompt('Unlock Files', `Enter the password to unlock the ${selectedFiles.length} selected file(s):`, { type: 'password', placeholder: 'Enter password...', confirmText: 'Unlock' });
                 if (password) {
                     try {
                         const response = await fetch('/api/files/unlock_batch', {

@@ -210,7 +210,7 @@
                     <div class="qr-code-container" id="ipQrContainer">
                         <div class="spinner"></div>
                     </div>
-                    <p class="qr-label">URL: <strong id="serverUrlLabel">http://{{ server_ip }}:<span
+                    <p class="qr-label">URL: <strong id="serverUrlLabel">https://{{ server_ip }}:<span
                                 id="dynamicPort"></span></strong></p>
                     <script>document.getElementById('dynamicPort').textContent = location.port || '80';</script>
                 </div>
@@ -261,6 +261,74 @@
                     </div>
                     <button type="submit" class="btn btn-primary" style="width:100%;">Download</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="moveFileModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2>Move File</h2>
+                <button id="closeMoveModal" class="btn-icon modal-close-btn" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Select the destination folder:</p>
+                <input type="hidden" id="moveFileSource">
+                <input type="hidden" id="moveFileName">
+                <div id="folderPickerList" class="folder-picker-list">
+                    <div class="spinner"></div>
+                </div>
+                <p id="moveModalError"
+                    style="color:var(--c-error-text); font-size:0.8rem; min-height:1.2em; margin-top:0.5em;"></p>
+                <button id="confirmMoveBtn" class="btn btn-primary" style="width:100%; margin-top:0.5rem;" disabled>
+                    Move Here
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared Prompt Modal -->
+    <div id="snailPromptModal" class="snail-modal-overlay">
+        <div class="snail-modal">
+            <div class="snail-modal-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <h3 id="snailPromptTitle">Enter Value</h3>
+            </div>
+            <p id="snailPromptMessage" class="snail-modal-message">Please enter a value:</p>
+            <input type="text" id="snailPromptInput" class="snail-modal-input" placeholder="Enter value...">
+            <p id="snailPromptError" class="snail-modal-error"></p>
+            <div class="snail-modal-actions">
+                <button id="snailPromptConfirm" class="snail-btn-primary">Confirm</button>
+                <button id="snailPromptCancel" class="snail-btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared Confirm Modal -->
+    <div id="snailConfirmModal" class="snail-modal-overlay">
+        <div class="snail-modal">
+            <div class="snail-modal-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <h3 id="snailConfirmTitle">Confirm Action</h3>
+            </div>
+            <p id="snailConfirmMessage" class="snail-modal-message">Are you sure?</p>
+            <div class="snail-modal-actions">
+                <button id="snailConfirmYes" class="snail-btn-primary">Yes</button>
+                <button id="snailConfirmNo" class="snail-btn-cancel">No</button>
             </div>
         </div>
     </div>
