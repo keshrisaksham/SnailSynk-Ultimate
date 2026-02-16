@@ -3,6 +3,9 @@ import sys
 import logging
 from pathlib import Path
 from datetime import timedelta
+import threading
+import http.server
+import socketserver
 
 # --- Third-Party Imports ---
 from dotenv import load_dotenv
@@ -58,7 +61,7 @@ class _SSLStderrFilter:
                 self._buffering = False
                 # Check if any buffered line contains SSL error
                 full_text = ''.join(self._buffer)
-                if 'SSLV3_ALERT' in full_text or 'CERTIFICATE_UNKNOWN' in full_text or ('ssl.SSLError' in full_text and 'alert' in full_text):
+                if 'SSLV3_ALERT' in full_text or 'CERTIFICATE_UNKNOWN' in full_text or 'HTTP_REQUEST' in full_text or ('ssl.SSLError' in full_text and 'alert' in full_text):
                     self._buffer = []
                     return len(text)
                 # Not an SSL error — flush the buffer
@@ -206,7 +209,59 @@ if __name__ == '__main__':
     """
 
     console.print(Panel(info_text, title="[bold #946eeA]SnailSynk[/]", subtitle="[#9e82b4]v2.0[/]", border_style="magenta"))
-    console.print(Panel(panel_content.strip(), title="[bold #62A0EA]Access Points[/]", border_style="blue"))
+    
+    access_text = f"""
+[bold]SECURE ACCESS (HTTPS):[/]
+    Local:   [cyan]https://localhost:{APP_PORT}[/]
+    Network: [cyan]https://{local_ip}:{APP_PORT}[/]
+
+[bold]AUTO-REDIRECT (HTTP):[/]
+    Local:   [yellow]http://localhost[/] (redirects to HTTPS)
+    Network: [yellow]http://{local_ip}[/] (redirects to HTTPS)
+    """
+    console.print(Panel(access_text.strip(), title="[bold #62A0EA]Access Points[/]", border_style="blue"))
     console.print(Rule("[bold white]Application Log[/]", style="white"))
+
+    
+    # --- HTTP Redirector ---
+    def run_http_redirector(https_port):
+        """
+        Runs a simple HTTP server on port 80 (or 8080) that redirects
+        all traffic to the HTTPS version on the specified port.
+        """
+        class HTTPRedirectHandler(http.server.SimpleHTTPRequestHandler):
+            def do_GET(self):
+                target_host = self.headers.get('Host', '').split(':')[0]
+                if not target_host:
+                    target_host = 'localhost'
+                
+                # Construct the new HTTPS URL
+                new_url = f"https://{target_host}:{https_port}{self.path}"
+                
+                self.send_response(301)
+                self.send_header('Location', new_url)
+                self.end_headers()
+                
+            def log_message(self, format, *args):
+                # Suppress default HTTP server logging to keep console clean
+                pass
+
+        # Try port 80 first, then 8080
+        ports_to_try = [80, 8080]
+        
+        for port in ports_to_try:
+            try:
+                with socketserver.TCPServer(("", port), HTTPRedirectHandler) as httpd:
+                    console.print(f"[bold yellow]HTTP Redirector running on port {port} -> HTTPS port {https_port}[/bold yellow]")
+                    httpd.serve_forever()
+                break # If successful, stop trying ports
+            except OSError:
+                if port == ports_to_try[-1]:
+                     console.print(f"[bold red]Could not bind HTTP redirector to ports {ports_to_try}. Redirection disabled.[/bold red]")
+                continue
+
+    # Start the redirector in a daemon thread
+    redirect_thread = threading.Thread(target=run_http_redirector, args=(APP_PORT,), daemon=True)
+    redirect_thread.start()
 
     socketio.run(app, host='0.0.0.0', port=APP_PORT, certfile=certfile, keyfile=keyfile)
