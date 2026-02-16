@@ -137,7 +137,7 @@ for /f "tokens=1,* delims==" %%a in ('findstr /b "SNAILSYNK_PORT" .env 2^>nul') 
 )
 
 :: Open browser after a short delay (start in background)
-start "" "http://localhost:%LAUNCH_PORT%"
+start "" "https://localhost:%LAUNCH_PORT%"
 
 :: Start the Python application
 python SnailSynk.py
