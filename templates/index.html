@@ -182,10 +182,14 @@
                             <button class="custom-sort-option" data-value="name-desc">Name (Z-A)</button>
                             <button class="custom-sort-option active" data-value="date-desc">Newest First</button>
                             <button class="custom-sort-option" data-value="date-asc">Oldest First</button>
+                            <button class="custom-sort-option" data-value="size-desc">Size (Largest)</button>
+                            <button class="custom-sort-option" data-value="size-asc">Size (Smallest)</button>
                             <div style="border-top: 1px solid var(--c-border); margin: 0.25rem 0;"></div>
                             <button class="custom-sort-option active" data-group="folders-first">Folders First</button>
                             <button class="custom-sort-option" data-group="files-first">Files First</button>
                             <button class="custom-sort-option" data-group="none">No Grouping</button>
+                            <div style="border-top: 1px solid var(--c-border); margin: 0.25rem 0;"></div>
+                            <button class="custom-sort-option" data-filter="favorites-only">⭐ Favourites Only</button>
                         </div>
                     </div>
                     <button id="searchToggleBtn" class="btn-icon" title="Search files">
@@ -239,9 +243,12 @@
                                     {% if file.name is defined %}
                                     {% if file.type == 'folder' %}
                                     <tr data-file-row="{{ file.encoded_name }}" data-sort-name="{{ file.name.lower() }}"
-                                        data-sort-date="{{ file.mtime }}" data-type="folder" class="folder-row">
+                                        data-sort-date="{{ file.mtime }}" data-sort-size="{{ file.size|default(0) }}"
+                                        data-favorite="{{ 'true' if file.is_favorite else 'false' }}" data-type="folder"
+                                        class="folder-row{{ ' favorite-row' if file.is_favorite else '' }}">
                                         <td style="text-align: center;"><input type="checkbox" name="selected_files"
-                                                value="{{ file.name }}" class="file-checkbox" disabled></td>
+                                                value="{{ file.name }}" class="file-checkbox" {{ '' if is_admin
+                                                else ' disabled' }}></td>
                                         <td>
                                             <a href="javascript:void(0)" class="folder-link"
                                                 data-folder-name="{{ file.name }}"
@@ -258,6 +265,27 @@
                                         </td>
                                         <td class="index-file-actions">
                                             {% if is_admin %}
+                                            <button type="button" class="btn-icon folder-download-btn"
+                                                title="Download folder {{ file.name }}"
+                                                data-folder-name="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                </svg>
+                                            </button>
+                                            <button type="button" class="btn-icon rename-folder-btn"
+                                                title="Rename folder {{ file.name }}"
+                                                data-folder-name="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                                    <path d="m15 5 4 4"></path>
+                                                </svg>
+                                            </button>
                                             <button type="button" class="btn-icon delete-folder-btn"
                                                 title="Delete folder {{ file.name }}"
                                                 data-folder-name="{{ file.name }}">
@@ -270,12 +298,28 @@
                                                     </path>
                                                 </svg>
                                             </button>
+                                            <button type="button" class="btn-icon file-share-btn"
+                                                title="Share folder {{ file.name }}" data-filename="{{ file.name }}"
+                                                data-type="folder">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path
+                                                        d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
+                                                    </path>
+                                                    <path
+                                                        d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
+                                                    </path>
+                                                </svg>
+                                            </button>
                                             {% endif %}
                                         </td>
                                     </tr>
                                     {% else %}
                                     <tr data-file-row="{{ file.encoded_name }}" data-sort-name="{{ file.name.lower() }}"
-                                        data-sort-date="{{ file.mtime }}" data-type="file">
+                                        data-sort-date="{{ file.mtime }}" data-sort-size="{{ file.size|default(0) }}"
+                                        data-favorite="{{ 'true' if file.is_favorite else 'false' }}" data-type="file"
+                                        class="{{ 'favorite-row' if file.is_favorite else '' }}">
                                         <td style="text-align: center;"><input type="checkbox" name="selected_files"
                                                 value="{{ file.name }}" class="file-checkbox"></td>
                                         <td><a href="{{ url_for('main.download_file', filename=file.encoded_name) }}"
@@ -296,6 +340,27 @@
                                                     <line x1="12" y1="15" x2="12" y2="3"></line>
                                                 </svg></a>
                                             {% if is_admin %}
+                                            <button type="button" class="btn-icon rename-file-btn"
+                                                title="Rename {{ file.name }}" data-filename="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                                    <path d="m15 5 4 4"></path>
+                                                </svg>
+                                            </button>
+                                            <button type="button" class="btn-icon file-move-btn"
+                                                title="Move {{ file.name }}" data-filename="{{ file.name }}"
+                                                data-encoded="{{ file.encoded_name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M15 3h6v6"></path>
+                                                    <path d="M10 14L21 3"></path>
+                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6">
+                                                    </path>
+                                                </svg>
+                                            </button>
                                             <button type="button" class="btn-icon file-lock-btn"
                                                 title="{{ 'Unlock File' if file.is_locked else 'Lock File' }}"
                                                 data-filename="{{ file.encoded_name }}">
@@ -324,6 +389,32 @@
                                                     <path
                                                         d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
                                                     </path>
+                                                </svg>
+                                            </button>
+                                            <button type="button" class="btn-icon file-share-btn"
+                                                title="Share {{ file.name }}" data-filename="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path
+                                                        d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71">
+                                                    </path>
+                                                    <path
+                                                        d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                            <button type="button"
+                                                class="btn-icon file-favorite-btn{{ ' active' if file.is_favorite else '' }}"
+                                                title="{{ 'Unstar' if file.is_favorite else 'Star' }} {{ file.name }}"
+                                                data-filename="{{ file.name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                                    fill="{{ 'currentColor' if file.is_favorite else 'none' }}"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <polygon
+                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                    </polygon>
                                                 </svg>
                                             </button>
                                             {% endif %}
@@ -378,6 +469,21 @@
                                     d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
                                 </path>
                             </svg>Delete</button>
+                        <button type="button" id="moveSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <path d="M15 3h6v6"></path>
+                                <path d="M10 14L21 3"></path>
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            </svg>Move</button>
+                        <button type="button" id="shareSelectedBtn" class="btn btn-primary" disabled><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="width: 1.1rem; height: 1.1rem; margin-right: 0.5rem;">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>Share</button>
                         {% endif %}
                     </div>
                 </form>

@@ -198,21 +198,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
                     }
                     </button>` : '';
+                const folderDownloadBtn = isAdmin ? `
+                    <button type="button" class="btn-icon folder-download-btn" title="Download folder ${item.name}" data-folder-name="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>` : '';
+                const folderRenameBtn = isAdmin ? `
+                    <button type="button" class="btn-icon rename-folder-btn" title="Rename folder ${item.name}" data-folder-name="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                    </button>` : '';
                 const folderDeleteBtn = isAdmin ? `
                     <button type="button" class="btn-icon delete-folder-btn" title="Delete folder ${item.name}" data-folder-name="${item.name}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>` : '';
+                const folderShareBtn = isAdmin ? `
+                    <button type="button" class="btn-icon file-share-btn" title="Share folder ${item.name}" data-filename="${item.name}" data-type="folder">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </button>` : '';
                 const lockedBadge = folderLocked ? ' <span style="color:var(--c-text-muted); font-size:0.75rem;">🔒</span>' : '';
+                const isFav = item.is_favorite;
+                const favClass = isFav ? ' favorite-row' : '';
                 rowsHtml += `
-                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-type="folder" class="folder-row">
-                        <td style="text-align: center;"><input type="checkbox" class="file-checkbox" disabled></td>
+                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-sort-size="${item.size || 0}" data-favorite="${isFav ? 'true' : 'false'}" data-type="folder" class="folder-row${favClass}">
+                        <td style="text-align: center;"><input type="checkbox" name="selected_files" value="${item.name}" class="file-checkbox"${isAdmin ? '' : ' disabled'}></td>
                         <td>
                             <a href="javascript:void(0)" class="folder-link" data-folder-name="${item.name}" data-folder-path="${item.encoded_name}" title="Open ${item.name}">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="folder-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                                 ${item.name}${lockedBadge}
                             </a>
                         </td>
-                        <td class="index-file-actions">${folderLockBtn}${folderDeleteBtn}</td>
+                        <td class="index-file-actions">${folderDownloadBtn}${folderLockBtn}${folderRenameBtn}${folderDeleteBtn}${folderShareBtn}</td>
                     </tr>`;
             } else {
                 const lockedAttr = item.is_locked ? 'true' : 'false';
@@ -221,15 +235,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
                     : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`;
                 const adminButtons = isAdmin ? `
+                    <button type="button" class="btn-icon rename-file-btn" title="Rename ${item.name}" data-filename="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
+                    </button>
                     <button type="button" class="btn-icon file-move-btn" title="Move ${item.name}" data-filename="${item.name}" data-encoded="${item.encoded_name}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
                     </button>
                     <button type="button" class="btn-icon file-lock-btn" title="${lockTitle}" data-filename="${item.encoded_name}">${lockIcon}</button>
                     <button type="button" class="btn-icon delete-file-btn" title="Delete ${item.name}" data-filename="${item.encoded_name}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                    <button type="button" class="btn-icon file-share-btn" title="Share ${item.name}" data-filename="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    </button>
+                    <button type="button" class="btn-icon file-favorite-btn${item.is_favorite ? ' active' : ''}" title="${item.is_favorite ? 'Unstar' : 'Star'} ${item.name}" data-filename="${item.name}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${item.is_favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                     </button>` : '';
+                const fileFavClass = item.is_favorite ? ' favorite-row' : '';
                 rowsHtml += `
-                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-type="file">
+                    <tr data-file-row="${item.encoded_name}" data-sort-name="${item.name.toLowerCase()}" data-sort-date="${item.mtime}" data-sort-size="${item.size || 0}" data-favorite="${item.is_favorite ? 'true' : 'false'}" data-type="file" class="${fileFavClass}">
                         <td style="text-align: center;"><input type="checkbox" name="selected_files" value="${item.name}" class="file-checkbox"></td>
                         <td><a href="/files/${item.encoded_name}" download title="Download ${item.name}" class="file-link-preview" data-filename="${item.encoded_name}" data-locked="${lockedAttr}">${item.name}</a></td>
                         <td class="index-file-actions">
@@ -394,6 +418,158 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 const filename = btn.dataset.filename;
                 openMoveModal(filename, currentPath);
+            });
+        });
+
+        // File rename buttons (admin only)
+        document.querySelectorAll('.rename-file-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const oldName = btn.dataset.filename;
+                const newName = await snailPrompt('Rename File', `Enter a new name for "${oldName}":`, { placeholder: oldName, confirmText: 'Rename', defaultValue: oldName });
+                if (!newName || newName === oldName) return;
+                setStatus(`[INFO] Renaming '${oldName}'...`, 'info', 60000);
+                try {
+                    const response = await fetch('/api/file/rename', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: currentPath, old_name: oldName, new_name: newName })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to rename file.');
+                    setStatus(`[OK] ${result.message}`, 'success');
+                } catch (error) {
+                    console.error('Error renaming file:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // Folder rename buttons (admin only)
+        document.querySelectorAll('.rename-folder-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const oldName = btn.dataset.folderName;
+                const newName = await snailPrompt('Rename Folder', `Enter a new name for "${oldName}":`, { placeholder: oldName, confirmText: 'Rename', defaultValue: oldName });
+                if (!newName || newName === oldName) return;
+                setStatus(`[INFO] Renaming folder '${oldName}'...`, 'info', 60000);
+                try {
+                    const response = await fetch('/api/folder/rename', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: currentPath, old_name: oldName, new_name: newName })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to rename folder.');
+                    setStatus(`[OK] ${result.message}`, 'success');
+                } catch (error) {
+                    console.error('Error renaming folder:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // Folder download buttons
+        document.querySelectorAll('.folder-download-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const folderName = btn.dataset.folderName;
+                setStatus(`[INFO] Downloading folder '${folderName}' as ZIP...`, 'info', 60000);
+                try {
+                    const response = await fetch('/api/folder/download', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: currentPath, folder_name: folderName })
+                    });
+                    if (!response.ok) {
+                        const result = await response.json();
+                        throw new Error(result.error || 'Failed to download folder.');
+                    }
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${folderName}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    setStatus(`[OK] Folder '${folderName}' downloaded.`, 'success');
+                } catch (error) {
+                    console.error('Error downloading folder:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // File share buttons (admin only)
+        document.querySelectorAll('.file-share-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const filename = btn.dataset.filename;
+                const filepath = currentPath ? `${currentPath}/${filename}` : filename;
+                const expiryOptions = [
+                    { label: '30 Minutes', value: '0.5' },
+                    { label: '4 Hours', value: '4' },
+                    { label: '8 Hours', value: '8' },
+                    { label: '12 Hours', value: '12' },
+                    { label: '16 Hours', value: '16' },
+                    { label: '20 Hours', value: '20' },
+                    { label: '24 Hours', value: '24' },
+                    { label: 'No Expiry', value: '' },
+                    { label: 'Custom...', value: '__custom__' }
+                ];
+                const expiryInput = await snailSelect('Share Link', `Create a shareable link for "${filename}". Choose an expiry time:`, expiryOptions, { confirmText: 'Create Link' });
+                if (expiryInput === null) return; // cancelled
+                const expiry_hours = expiryInput && !isNaN(parseFloat(expiryInput)) ? parseFloat(expiryInput) : null;
+                setStatus(`[INFO] Creating share link...`, 'info', 60000);
+                try {
+                    const response = await fetch('/api/file/share', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filepath, expiry_hours })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to create share link.');
+                    const shareUrl = result.url;
+                    try {
+                        await navigator.clipboard.writeText(shareUrl);
+                        setStatus(`[OK] Share link copied to clipboard!`, 'success');
+                    } catch {
+                        setStatus(`[OK] Share link: ${shareUrl}`, 'success', 30000);
+                    }
+                } catch (error) {
+                    console.error('Error creating share link:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
+            });
+        });
+
+        // File favorite buttons (admin only)
+        document.querySelectorAll('.file-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const filename = btn.dataset.filename;
+                const filepath = currentPath ? `${currentPath}/${filename}` : filename;
+                try {
+                    const response = await fetch('/api/file/favorite', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filepath, path: currentPath })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to toggle favorite.');
+                    const action = result.favorited ? 'Starred' : 'Unstarred';
+                    setStatus(`[OK] ${action} '${filename}'.`, 'success');
+                } catch (error) {
+                    console.error('Error toggling favorite:', error);
+                    setStatus(`[ERR] ${error.message}`, 'error');
+                }
             });
         });
     }
@@ -857,9 +1033,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const lockSelectedBtn = document.getElementById('lockSelectedBtn');
         const unlockSelectedBtn = document.getElementById('unlockSelectedBtn');
         const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        const moveSelectedBtn = document.getElementById('moveSelectedBtn');
         if (lockSelectedBtn) lockSelectedBtn.disabled = !anySelected;
         if (unlockSelectedBtn) unlockSelectedBtn.disabled = !anySelected;
         if (deleteSelectedBtn) deleteSelectedBtn.disabled = !anySelected;
+        if (moveSelectedBtn) moveSelectedBtn.disabled = !anySelected;
+        const shareSelectedBtn = document.getElementById('shareSelectedBtn');
+        if (shareSelectedBtn) shareSelectedBtn.disabled = !anySelected;
 
         if (selectAllFilesCheckbox) {
             const visibleCheckboxes = Array.from(fileCheckboxes).filter(cb => !cb.closest('tr').classList.contains('row-hidden'));
@@ -890,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sortOptionsPanel = document.getElementById('sortOptions');
     let currentSortValue = 'date-desc'; // Default sort value
     let currentGroupValue = 'folders-first'; // Default group value
+    let currentFilterValue = 'all'; // Default filter value: 'all' or 'favorites-only'
 
     if (sortToggleBtn && sortOptionsPanel) {
         sortToggleBtn.addEventListener('click', (e) => {
@@ -911,6 +1092,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 sortOptionsPanel.querySelectorAll('.custom-sort-option[data-group]').forEach(o => o.classList.remove('active'));
                 option.classList.add('active');
                 currentGroupValue = option.dataset.group;
+            } else if (option.dataset.filter) {
+                // Filter option clicked — toggle active state
+                const isActive = option.classList.toggle('active');
+                currentFilterValue = isActive ? option.dataset.filter : 'all';
             }
             sortOptionsPanel.classList.remove('visible');
             // Trigger sort
@@ -934,25 +1119,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameB = b.dataset.sortName;
             const dateA = parseFloat(a.dataset.sortDate);
             const dateB = parseFloat(b.dataset.sortDate);
+            const sizeA = parseFloat(a.dataset.sortSize || 0);
+            const sizeB = parseFloat(b.dataset.sortSize || 0);
             switch (currentSortValue) {
                 case 'name-asc': return nameA.localeCompare(nameB);
                 case 'name-desc': return nameB.localeCompare(nameA);
                 case 'date-asc': return dateA - dateB;
+                case 'size-asc': return sizeA - sizeB;
+                case 'size-desc': return sizeB - sizeA;
                 case 'date-desc': default: return dateB - dateA;
             }
         });
         // 2. Apply grouping if active
+        let finalRows;
         if (currentGroupValue === 'folders-first') {
             const folders = rows.filter(r => r.dataset.type === 'folder');
             const files = rows.filter(r => r.dataset.type !== 'folder');
-            [...folders, ...files].forEach(row => fileListBody.appendChild(row));
+            finalRows = [...folders, ...files];
         } else if (currentGroupValue === 'files-first') {
             const folders = rows.filter(r => r.dataset.type === 'folder');
             const files = rows.filter(r => r.dataset.type !== 'folder');
-            [...files, ...folders].forEach(row => fileListBody.appendChild(row));
+            finalRows = [...files, ...folders];
         } else {
-            rows.forEach(row => fileListBody.appendChild(row));
+            finalRows = rows;
         }
+        // 3. Push favorites to top within their group
+        const favorites = finalRows.filter(r => r.dataset.favorite === 'true');
+        const nonFavorites = finalRows.filter(r => r.dataset.favorite !== 'true');
+        const sorted = [...favorites, ...nonFavorites];
+        // 4. Apply favorites filter
+        sorted.forEach(row => {
+            fileListBody.appendChild(row);
+            if (currentFilterValue === 'favorites-only' && row.dataset.favorite !== 'true') {
+                row.classList.add('row-hidden');
+            } else {
+                row.classList.remove('row-hidden');
+            }
+        });
     }
     const searchToggleBtn = document.getElementById('searchToggleBtn');
     const searchContainer = document.getElementById('searchContainer');
@@ -1004,6 +1207,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (downloadTable) {
         downloadTable.addEventListener('click', async (e) => {
+            // Guard: ignore clicks on folder action buttons to prevent double-download
+            if (e.target.closest('.folder-download-btn, .rename-folder-btn, .delete-folder-btn, .folder-lock-btn, .file-share-btn')) return;
             const downloadLink = e.target.closest('.file-download-link');
             const lockButton = e.target.closest('.file-lock-btn');
             if (downloadLink) {
@@ -1077,14 +1282,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const moveFileName = document.getElementById('moveFileName');
     const moveModalError = document.getElementById('moveModalError');
     let selectedDestPath = null;
+    let batchMoveFilenames = null; // null = single mode, array = batch mode
 
-    function openMoveModal(filename, sourcePath) {
+    function openMoveModal(filename, sourcePath, batchFilenames) {
         if (!moveFileModal) return;
-        moveFileName.value = filename;
+        moveFileName.value = filename || '';
         moveFileSource.value = sourcePath;
         moveModalError.textContent = '';
         confirmMoveBtn.disabled = true;
         selectedDestPath = null;
+        batchMoveFilenames = batchFilenames || null;
         folderPickerList.innerHTML = '<div class="spinner"></div>';
         moveFileModal.classList.add('visible');
 
@@ -1127,7 +1334,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmMoveBtn) {
         confirmMoveBtn.addEventListener('click', async () => {
             if (selectedDestPath === null) return;
-            const filename = moveFileName.value;
             const sourcePath = moveFileSource.value;
 
             // Don't move to the same folder
@@ -1140,15 +1346,34 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmMoveBtn.textContent = 'Moving...';
             moveModalError.textContent = '';
             try {
-                const response = await fetch('/api/file/move', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename, source_path: sourcePath, dest_path: selectedDestPath })
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Failed to move file.');
-                closeMoveModal();
-                setStatus(`[OK] ${result.message}`, 'success');
+                if (batchMoveFilenames && batchMoveFilenames.length > 0) {
+                    // Batch move
+                    const response = await fetch('/api/files/move_batch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filenames: batchMoveFilenames, source_path: sourcePath, dest_path: selectedDestPath })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to move files.');
+                    closeMoveModal();
+                    const movedCount = result.details?.moved?.length || 0;
+                    const failedCount = result.details?.failed?.length || 0;
+                    let msg = `[OK] Moved ${movedCount} file(s).`;
+                    if (failedCount > 0) msg += ` ${failedCount} file(s) failed.`;
+                    setStatus(msg, failedCount > 0 ? 'warning' : 'success');
+                } else {
+                    // Single file move
+                    const filename = moveFileName.value;
+                    const response = await fetch('/api/file/move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename, source_path: sourcePath, dest_path: selectedDestPath })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Failed to move file.');
+                    closeMoveModal();
+                    setStatus(`[OK] ${result.message}`, 'success');
+                }
             } catch (error) {
                 moveModalError.textContent = error.message;
                 console.error('Error moving file:', error);
@@ -1273,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const response = await fetch('/api/files/lock_batch', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ filenames: selectedFiles, password: password })
+                            body: JSON.stringify({ filenames: selectedFiles, password: password, subpath: currentPath })
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.error || 'Server error');
@@ -1295,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const response = await fetch('/api/files/unlock_batch', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ filenames: selectedFiles, password: password })
+                            body: JSON.stringify({ filenames: selectedFiles, password: password, subpath: currentPath })
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.error || 'Server error');
@@ -1318,7 +1543,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const response = await fetch('/api/files/delete_batch', {
                             method: 'DELETE',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ filenames: selectedFiles })
+                            body: JSON.stringify({ filenames: selectedFiles, subpath: currentPath })
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.error || 'Server error');
@@ -1326,6 +1551,113 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (result.details.failed.length > 0) flash(`[WARN] ${result.details.failed.length} file(s) could not be deleted.`, 'warning');
                         // No manual removal needed
                     } catch (error) { flash(`[ERR] Delete operation failed: ${error.message}`, 'error'); }
+                }
+            });
+        }
+
+        // Batch move
+        const moveSelectedBtnEl = document.getElementById('moveSelectedBtn');
+        if (moveSelectedBtnEl) {
+            moveSelectedBtnEl.addEventListener('click', () => {
+                const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+                if (selectedFiles.length === 0) return;
+                openMoveModal(null, currentPath, selectedFiles);
+            });
+        }
+
+        // Batch share
+        const shareSelectedBtnEl = document.getElementById('shareSelectedBtn');
+        if (shareSelectedBtnEl) {
+            shareSelectedBtnEl.addEventListener('click', async () => {
+                const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+                if (selectedFiles.length === 0) return;
+                const expiryOptions = [
+                    { label: '30 Minutes', value: '0.5' },
+                    { label: '4 Hours', value: '4' },
+                    { label: '8 Hours', value: '8' },
+                    { label: '12 Hours', value: '12' },
+                    { label: '16 Hours', value: '16' },
+                    { label: '20 Hours', value: '20' },
+                    { label: '24 Hours', value: '24' },
+                    { label: 'No Expiry', value: '' },
+                    { label: 'Custom...', value: '__custom__' }
+                ];
+                const expiryInput = await snailSelect('Share Selected', `Create share links for ${selectedFiles.length} item(s). Choose an expiry time:`, expiryOptions, { confirmText: 'Create Links' });
+                if (expiryInput === null) return;
+                const expiry_hours = expiryInput && !isNaN(parseFloat(expiryInput)) ? parseFloat(expiryInput) : null;
+                setStatus(`[INFO] Creating ${selectedFiles.length} share link(s)...`, 'info', 60000);
+                let successCount = 0;
+                let lastUrl = '';
+                const sharedLinks = [];
+                for (const filename of selectedFiles) {
+                    const filepath = currentPath ? `${currentPath}/${filename}` : filename;
+                    try {
+                        const response = await fetch('/api/file/share', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filepath, expiry_hours })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            successCount++;
+                            lastUrl = result.url;
+                            sharedLinks.push(lastUrl);
+                        }
+                    } catch (error) { console.error(`Error sharing ${filename}:`, error); }
+                }
+                if (successCount === 1) {
+                    try {
+                        await navigator.clipboard.writeText(lastUrl);
+                        setStatus(`[OK] Share link copied to clipboard!`, 'success');
+                    } catch {
+                        prompt("Share link created:", lastUrl);
+                    }
+                } else if (successCount > 0) {
+                    const linkList = sharedLinks.join('\n');
+                    // Create a simple custom modal or use a prompt-like display for multiple links
+                    // We can reuse snailSelect or snailAlert if we had one.
+                    // For now, let's use a simple alert/prompt workaround or custom HTML injection
+                    // Actually, let's just use snailSelect's modal structure but adapting it, 
+                    // or simpler: just use snailAlert if it exists, or a custom approach.
+                    // Since we don't have a dedicated "show text" modal, let's use a textarea in a snailPrompt-ish way?
+                    // Or just a simple alert for now? No, alert is ugly.
+                    // Let's use the existing snailConfirm but with a textarea? No.
+                    // Let's just create a quick custom modal content for showing links.
+                    const linksHtml = sharedLinks.map(link => `<div style="margin-bottom:0.5rem"><a href="${link}" target="_blank" style="word-break:break-all">${link}</a></div>`).join('');
+
+                    // Simple custom modal for links
+                    const modal = document.createElement('div');
+                    modal.className = 'modal-overlay open';
+                    modal.innerHTML = `
+                        <div class="modal-content" style="max-width: 600px">
+                            <div class="modal-header">
+                                <h3>${successCount} Share Links Created</h3>
+                                <button class="close-modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Here are your share links:</p>
+                                <textarea style="width:100%; height:150px; margin-top:0.5rem; font-family:monospace; padding:0.5rem" readonly>${sharedLinks.join('\n')}</textarea>
+                                <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--c-text-muted)">
+                                    ${linksHtml}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-primary" id="copyAllBtn">Copy All</button>
+                                <button class="btn btn-secondary close-modal-btn">Close</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+
+                    const close = () => modal.remove();
+                    modal.querySelector('.close-modal').onclick = close;
+                    modal.querySelector('.close-modal-btn').onclick = close;
+                    modal.querySelector('#copyAllBtn').onclick = () => {
+                        navigator.clipboard.writeText(sharedLinks.join('\n'));
+                        setStatus('All links copied!', 'success');
+                    };
+                } else {
+                    setStatus(`[ERR] Failed to create share links.`, 'error');
                 }
             });
         }

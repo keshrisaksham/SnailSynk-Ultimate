@@ -1,0 +1,167 @@
+{% extends "index_base.html" %}
+
+{% block title %}BugByte - AI Chat{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark-dimmed.min.css"
+    id="hljs-dark-theme">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css"
+    id="hljs-light-theme">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
+<script>
+    // Toggle highlight.js themes based on current theme
+    (function () {
+        const theme = localStorage.getItem('theme');
+        const darkSheet = document.getElementById('hljs-dark-theme');
+        const lightSheet = document.getElementById('hljs-light-theme');
+        if (darkSheet) darkSheet.disabled = theme !== 'dark';
+        if (lightSheet) lightSheet.disabled = theme === 'dark';
+    })();
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="bugbyte-app" data-is-admin="{{ 'true' if is_admin else 'false' }}">
+    {% if is_admin %}
+    <!-- Sidebar (admin only) -->
+    <aside class="bb-sidebar" id="bbSidebar">
+        <div class="bb-sidebar-header">
+            <div class="bb-brand">
+                <svg class="bb-brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2l1.5 3M16 2l-1.5 3" />
+                    <path d="M3 10l2-1M21 10l-2-1" />
+                    <path d="M3 16l2-1M21 16l-2-1" />
+                    <ellipse cx="12" cy="13" rx="6" ry="7" />
+                    <path d="M9 11.5a1 1 0 1 0 0 1M15 11.5a1 1 0 1 0 0 1" />
+                    <path d="M10 15c.8.7 1.5 1 2 1s1.2-.3 2-1" />
+                </svg>
+                <span class="bb-brand-text">BugByte</span>
+            </div>
+            <button id="newChatBtn" class="bb-new-chat-btn" title="New Chat (Ctrl+Shift+N)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+            </button>
+        </div>
+        <div class="bb-sidebar-search">
+            <input type="text" id="convSearchInput" placeholder="Search conversations..." autocomplete="off">
+        </div>
+        <div class="bb-conv-list" id="convList">
+            <!-- Conversations loaded via JS -->
+        </div>
+        <div class="bb-sidebar-footer">
+            <a href="{{ url_for('main.index') }}" class="bb-back-link" title="Back to SnailSynk">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                <span>Back to SnailSynk</span>
+            </a>
+        </div>
+    </aside>
+    {% endif %}
+
+
+    {% if is_admin %}
+    <!-- Sidebar toggle for mobile -->
+    <button id="sidebarToggle" class="bb-sidebar-toggle" title="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+    </button>
+    {% endif %}
+
+    <!-- Main Chat Area -->
+    <main class="bb-main">
+        <div class="bb-chat-container">
+            <!-- Messages -->
+            <div class="bb-messages" id="bbMessages">
+                <div class="bb-welcome" id="bbWelcome">
+                    <!-- Floating bug particles -->
+                    <div class="bb-particles">
+                        <span class="bb-particle" style="--i:0">🐛</span>
+                        <span class="bb-particle" style="--i:1">🐜</span>
+                        <span class="bb-particle" style="--i:2">🐞</span>
+                        <span class="bb-particle" style="--i:3">🕷️</span>
+                        <span class="bb-particle" style="--i:4">🦋</span>
+                        <span class="bb-particle" style="--i:5">🐝</span>
+                    </div>
+
+                    <div class="bb-welcome-icon">
+                        <div class="bb-icon-glow"></div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 2l1.5 3M16 2l-1.5 3" />
+                            <path d="M3 10l2-1M21 10l-2-1" />
+                            <path d="M3 16l2-1M21 16l-2-1" />
+                            <ellipse cx="12" cy="13" rx="6" ry="7" />
+                            <path d="M9 11.5a1 1 0 1 0 0 1M15 11.5a1 1 0 1 0 0 1" />
+                            <path d="M10 15c.8.7 1.5 1 2 1s1.2-.3 2-1" />
+                        </svg>
+                    </div>
+                    <h2 class="bb-welcome-title">Welcome to <span class="bb-gradient-text">BugByte</span></h2>
+                    <p class="bb-welcome-subtitle">Your AI-powered coding companion. Ask me anything!</p>
+                    <div class="bb-suggestions">
+                        <button class="bb-suggestion" data-prompt="Explain how async/await works in JavaScript">
+                            <span class="bb-suggestion-emoji">💡</span>
+                            <span class="bb-suggestion-text">Explain async/await</span>
+                        </button>
+                        <button class="bb-suggestion"
+                            data-prompt="Write a Python script to sort a list of dictionaries by a key">
+                            <span class="bb-suggestion-emoji">🐍</span>
+                            <span class="bb-suggestion-text">Python sort dictionaries</span>
+                        </button>
+                        <button class="bb-suggestion" data-prompt="What are the SOLID principles in software design?">
+                            <span class="bb-suggestion-emoji">📐</span>
+                            <span class="bb-suggestion-text">SOLID principles</span>
+                        </button>
+                        <button class="bb-suggestion" data-prompt="Debug this code: for i in range(10) print(i)">
+                            <span class="bb-suggestion-emoji">🐛</span>
+                            <span class="bb-suggestion-text">Debug my code</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll to bottom button -->
+            <button id="scrollBottomBtn" class="bb-scroll-bottom" title="Scroll to bottom">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M12 5v14m-4-4 4 4 4-4" />
+                </svg>
+            </button>
+
+            <!-- Input Area -->
+            <div class="bb-input-area">
+                <div class="bb-input-wrapper">
+                    <textarea id="bbInput" placeholder="Ask BugByte anything..." rows="1"></textarea>
+                    <button id="bbStopBtn" class="bb-stop-btn" title="Stop generating" style="display:none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="6" width="12" height="12" rx="2" />
+                        </svg>
+                    </button>
+                    <button id="bbSendBtn" class="bb-send-btn" title="Send message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
+                </div>
+                <p class="bb-disclaimer">BugByte can make mistakes. Verify important information.</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

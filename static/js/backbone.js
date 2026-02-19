@@ -303,6 +303,94 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
+     * Show a select dropdown modal. Returns a Promise<string|null>.
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message
+     * @param {Array} options - Array of { label, value } objects. Include { label: 'Custom...', value: '__custom__' } for custom input.
+     * @param {Object} opts - Options: { confirmText }
+     */
+    window.snailSelect = function (title, message, options = [], opts = {}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('snailSelectModal');
+            const titleEl = document.getElementById('snailSelectTitle');
+            const messageEl = document.getElementById('snailSelectMessage');
+            const selectEl = document.getElementById('snailSelectInput');
+            const customInput = document.getElementById('snailSelectCustomInput');
+            const errorEl = document.getElementById('snailSelectError');
+            const confirmBtn = document.getElementById('snailSelectConfirm');
+            const cancelBtn = document.getElementById('snailSelectCancel');
+            if (!modal) { resolve(null); return; }
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            errorEl.textContent = '';
+            confirmBtn.textContent = opts.confirmText || 'Confirm';
+            customInput.style.display = 'none';
+            customInput.value = '';
+
+            // Populate select options
+            selectEl.innerHTML = '';
+            options.forEach(opt => {
+                const optionEl = document.createElement('option');
+                optionEl.value = opt.value;
+                optionEl.textContent = opt.label;
+                selectEl.appendChild(optionEl);
+            });
+
+            modal.classList.add('visible');
+            setTimeout(() => selectEl.focus(), 100);
+
+            // Show/hide custom input based on selection
+            const handleSelectChange = () => {
+                if (selectEl.value === '__custom__') {
+                    customInput.style.display = '';
+                    setTimeout(() => customInput.focus(), 50);
+                } else {
+                    customInput.style.display = 'none';
+                    customInput.value = '';
+                }
+                errorEl.textContent = '';
+            };
+
+            const handleConfirm = () => {
+                let value = selectEl.value;
+                if (value === '__custom__') {
+                    value = customInput.value.trim();
+                    if (!value || isNaN(parseFloat(value))) {
+                        errorEl.textContent = 'Please enter a valid number.';
+                        return;
+                    }
+                }
+                cleanup();
+                resolve(value);
+            };
+            const handleCancel = () => { cleanup(); resolve(null); };
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') handleConfirm();
+                if (e.key === 'Escape') handleCancel();
+            };
+            const handleOverlayClick = (e) => {
+                if (e.target === modal) handleCancel();
+            };
+            const cleanup = () => {
+                modal.classList.remove('visible');
+                selectEl.removeEventListener('change', handleSelectChange);
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                selectEl.removeEventListener('keydown', handleKeydown);
+                customInput.removeEventListener('keydown', handleKeydown);
+                modal.removeEventListener('click', handleOverlayClick);
+            };
+            selectEl.addEventListener('change', handleSelectChange);
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            selectEl.addEventListener('keydown', handleKeydown);
+            customInput.addEventListener('keydown', handleKeydown);
+            modal.addEventListener('click', handleOverlayClick);
+        });
+    };
+
+    /**
      * Show a confirm modal. Returns a Promise<boolean>.
      * @param {string} title - Modal title
      * @param {string} message - Modal message

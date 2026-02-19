@@ -125,7 +125,7 @@ if migrated_count > 0:
 # --- Initialize and Register Blueprints ---
 init_admin_routes(user_manager, socketio, blocklist_manager, action_logger, notes_manager)
 init_index_routes(file_manager, content_manager, action_logger, socketio)
-init_ai_chat_routes(action_logger)
+init_ai_chat_routes(action_logger, app.instance_path)
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(main_bp)
