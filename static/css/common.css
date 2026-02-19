@@ -1832,6 +1832,7 @@ textarea#sharedTextArea:not(:placeholder-shown)~.buffer-scroll-btn.visible {
     background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-accent) 100%);
     color: var(--c-primary-text);
     border-bottom-right-radius: 0.25rem;
+    white-space: pre-wrap;
 }
 
 .ai-chat-message.ai .ai-chat-bubble {
