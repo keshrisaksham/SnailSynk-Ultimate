@@ -140,7 +140,18 @@
 
             <!-- Input Area -->
             <div class="bb-input-area">
+                <!-- Image preview strip (hidden by default, shown when images are attached) -->
+                <div class="bb-image-preview-strip" id="bbImagePreview" style="display:none;"></div>
                 <div class="bb-input-wrapper">
+                    <input type="file" id="bbImageInput" accept="image/*" multiple hidden>
+                    <button id="bbImageBtn" class="bb-image-btn" title="Attach image" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                    </button>
                     <textarea id="bbInput" placeholder="Ask BugByte anything..." rows="1"></textarea>
                     <button id="bbStopBtn" class="bb-stop-btn" title="Stop generating" style="display:none;">
                         <svg viewBox="0 0 24 24" fill="currentColor">

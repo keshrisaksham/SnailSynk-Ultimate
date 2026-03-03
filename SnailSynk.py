@@ -3,9 +3,7 @@ import sys
 import logging
 from pathlib import Path
 from datetime import timedelta
-import threading
-import http.server
-import socketserver
+from porter import Porter
 
 # --- Third-Party Imports ---
 from dotenv import load_dotenv
@@ -106,7 +104,7 @@ app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 app.config['FILES_FOLDER'] = str(files_folder_path)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins='*')
 socketio.active_clients = {}
 
 # --- Initialize Managers ---
@@ -215,53 +213,15 @@ if __name__ == '__main__':
     Local:   [cyan]https://localhost:{APP_PORT}[/]
     Network: [cyan]https://{local_ip}:{APP_PORT}[/]
 
-[bold]AUTO-REDIRECT (HTTP):[/]
-    Local:   [yellow]http://localhost[/] (redirects to HTTPS)
-    Network: [yellow]http://{local_ip}[/] (redirects to HTTPS)
+[bold]AUTO-REDIRECT (HTTP → HTTPS):[/]
+    Local:   [yellow]http://localhost:{APP_PORT}[/] → https://localhost:{APP_PORT}
+    Network: [yellow]http://{local_ip}:{APP_PORT}[/] → https://{local_ip}:{APP_PORT}
     """
     console.print(Panel(access_text.strip(), title="[bold #62A0EA]Access Points[/]", border_style="blue"))
     console.print(Rule("[bold white]Application Log[/]", style="white"))
 
-    
-    # --- HTTP Redirector ---
-    def run_http_redirector(https_port):
-        """
-        Runs a simple HTTP server on port 80 (or 8080) that redirects
-        all traffic to the HTTPS version on the specified port.
-        """
-        class HTTPRedirectHandler(http.server.SimpleHTTPRequestHandler):
-            def do_GET(self):
-                target_host = self.headers.get('Host', '').split(':')[0]
-                if not target_host:
-                    target_host = 'localhost'
-                
-                # Construct the new HTTPS URL
-                new_url = f"https://{target_host}:{https_port}{self.path}"
-                
-                self.send_response(301)
-                self.send_header('Location', new_url)
-                self.end_headers()
-                
-            def log_message(self, format, *args):
-                # Suppress default HTTP server logging to keep console clean
-                pass
 
-        # Try port 80 first, then 8080
-        ports_to_try = [80, 8080]
-        
-        for port in ports_to_try:
-            try:
-                with socketserver.TCPServer(("", port), HTTPRedirectHandler) as httpd:
-                    console.print(f"[bold yellow]HTTP Redirector running on port {port} -> HTTPS port {https_port}[/bold yellow]")
-                    httpd.serve_forever()
-                break # If successful, stop trying ports
-            except OSError:
-                if port == ports_to_try[-1]:
-                     console.print(f"[bold red]Could not bind HTTP redirector to ports {ports_to_try}. Redirection disabled.[/bold red]")
-                continue
-
-    # Start the redirector in a daemon thread
-    redirect_thread = threading.Thread(target=run_http_redirector, args=(APP_PORT,), daemon=True)
-    redirect_thread.start()
-
+    # --- Start Server with HTTP→HTTPS auto-redirect on same port ---
+    porter = Porter(certfile, keyfile, APP_PORT)
+    porter.activate()
     socketio.run(app, host='0.0.0.0', port=APP_PORT, certfile=certfile, keyfile=keyfile)

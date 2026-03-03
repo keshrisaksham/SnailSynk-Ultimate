@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('bbSendBtn');
     const stopBtn = document.getElementById('bbStopBtn');
     const scrollBtn = document.getElementById('scrollBottomBtn');
+    const imageBtn = document.getElementById('bbImageBtn');
+    const imageInput = document.getElementById('bbImageInput');
+    const imagePreview = document.getElementById('bbImagePreview');
 
     // ─── State ───────────────────────────────────────────────────────────────
     let currentConvId = null;
@@ -30,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isStreaming = false;
     let abortController = null;
     let autoScroll = true;
+    let pendingImages = [];      // { name, base64, mimeType, dataUrl }
 
     // Funky bug loading messages
     const BUG_MESSAGES = [
@@ -90,6 +94,77 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+        }
+    });
+
+    // ─── Image Upload & Paste ────────────────────────────────────────────────
+    function readFileAsBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = reader.result;
+                const base64 = dataUrl.split(',')[1];
+                resolve({ name: file.name, base64, mimeType: file.type, dataUrl });
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderImagePreview() {
+        if (!imagePreview) return;
+        imagePreview.innerHTML = '';
+        if (pendingImages.length === 0) {
+            imagePreview.style.display = 'none';
+            return;
+        }
+        imagePreview.style.display = 'flex';
+        pendingImages.forEach((img, idx) => {
+            const item = document.createElement('div');
+            item.className = 'bb-image-preview-item';
+            item.innerHTML = `
+                <img src="${img.dataUrl}" alt="${escapeHtml(img.name)}">
+                <button class="bb-image-preview-remove" title="Remove">×</button>
+            `;
+            item.querySelector('.bb-image-preview-remove').addEventListener('click', () => {
+                pendingImages.splice(idx, 1);
+                renderImagePreview();
+            });
+            imagePreview.appendChild(item);
+        });
+    }
+
+    async function addFiles(files) {
+        for (const file of files) {
+            if (!file.type.startsWith('image/')) continue;
+            if (pendingImages.length >= 5) break; // max 5 images
+            const imgData = await readFileAsBase64(file);
+            pendingImages.push(imgData);
+        }
+        renderImagePreview();
+    }
+
+    if (imageBtn && imageInput) {
+        imageBtn.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', () => {
+            if (imageInput.files.length > 0) addFiles(imageInput.files);
+            imageInput.value = ''; // reset so same file can be re-selected
+        });
+    }
+
+    // Paste images from clipboard
+    input.addEventListener('paste', (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        const imageFiles = [];
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) imageFiles.push(file);
+            }
+        }
+        if (imageFiles.length > 0) {
+            e.preventDefault();
+            addFiles(imageFiles);
         }
     });
 
@@ -225,10 +300,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const bubble = document.createElement('div');
         bubble.className = 'bb-msg-bubble';
 
+        // Show images in user messages
+        if (role === 'user' && options.images && options.images.length > 0) {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'bb-msg-images';
+            options.images.forEach(img => {
+                const imgEl = document.createElement('img');
+                imgEl.src = img.dataUrl;
+                imgEl.alt = img.name || 'Attached image';
+                imgContainer.appendChild(imgEl);
+            });
+            bubble.appendChild(imgContainer);
+        }
+
         if (role === 'ai') {
             bubble.innerHTML = `<div class="md-content">${renderMarkdown(text)}</div>`;
         } else {
-            bubble.textContent = text;
+            const textNode = document.createElement('span');
+            textNode.textContent = text;
+            bubble.appendChild(textNode);
         }
 
         // Actions
@@ -320,11 +410,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Send Message ────────────────────────────────────────────────────────
     async function sendMessage(overrideText) {
         const text = overrideText || input.value.trim();
-        if (!text || isStreaming) return;
+        if ((!text && pendingImages.length === 0) || isStreaming) return;
+
+        // Capture attached images before clearing
+        const attachedImages = [...pendingImages];
+        pendingImages = [];
+        renderImagePreview();
 
         // Add user message
         messages.push({ role: 'user', text });
-        renderMessage('user', text);
+        renderMessage('user', text, { images: attachedImages });
 
         if (!overrideText) {
             input.value = '';
@@ -348,6 +443,12 @@ document.addEventListener('DOMContentLoaded', () => {
             parts: [{ text: m.text }]
         }));
 
+        // Build images payload for API
+        const imagesPayload = attachedImages.map(img => ({
+            base64: img.base64,
+            mimeType: img.mimeType
+        }));
+
         // Stream response
         abortController = new AbortController();
         let fullResponse = '';
@@ -356,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/ai-chat/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, history }),
+                body: JSON.stringify({ message: text || 'Describe this image.', history, images: imagesPayload }),
                 signal: abortController.signal
             });
 

@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmMessage = document.getElementById('confirmMessage');
     const confirmYesBtn = document.getElementById('confirmYesBtn');
     const confirmNoBtn = document.getElementById('confirmNoBtn');
+    const confirmIcon = document.getElementById('confirmIcon');
+    const folderPickerModal = document.getElementById('folderPickerModal');
+    const folderPickerList = document.getElementById('folderPickerList');
+    const folderPickerTitle = document.getElementById('folderPickerTitle');
+    const folderPickerMessage = document.getElementById('folderPickerMessage');
 
     // State
     let quill;
@@ -140,11 +145,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Custom confirm modal
-    function showConfirmModal(title, message) {
+    // Custom confirm modal with options
+    function showConfirmModal(title, message, options = {}) {
         return new Promise((resolve) => {
             confirmTitle.textContent = title;
             confirmMessage.textContent = message;
+
+            // Set button text
+            confirmYesBtn.textContent = options.confirmText || 'Confirm';
+            confirmNoBtn.textContent = options.cancelText || 'Cancel';
+
+            // Apply danger styling if needed
+            if (options.danger) {
+                confirmYesBtn.classList.remove('btn-primary');
+                confirmYesBtn.classList.add('btn-danger');
+                confirmIcon.innerHTML = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
+            } else {
+                confirmYesBtn.classList.remove('btn-danger');
+                confirmYesBtn.classList.add('btn-primary');
+                confirmIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+            }
+
             confirmModal.classList.add('visible');
 
             const handleYes = () => {
@@ -172,6 +193,61 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmNoBtn.addEventListener('click', handleNo);
             document.addEventListener('keydown', handleKeydown);
         });
+    }
+
+    // Folder picker modal
+    function showFolderPickerModal(title, message, folders) {
+        return new Promise((resolve) => {
+            folderPickerTitle.textContent = title;
+            folderPickerMessage.textContent = message;
+            folderPickerList.innerHTML = '';
+
+            // "No Folder" option
+            const rootBtn = document.createElement('button');
+            rootBtn.className = 'folder-picker-item root-option';
+            rootBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>No Folder (root)</span>
+            `;
+            rootBtn.addEventListener('click', () => { cleanup(); resolve(''); });
+            folderPickerList.appendChild(rootBtn);
+
+            // Folder buttons
+            folders.forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'folder-picker-item';
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>${escapeHtml(name)}</span>
+                `;
+                btn.addEventListener('click', () => { cleanup(); resolve(name); });
+                folderPickerList.appendChild(btn);
+            });
+
+            folderPickerModal.classList.add('visible');
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') { cleanup(); resolve(null); }
+            };
+
+            const cleanup = () => {
+                folderPickerModal.classList.remove('visible');
+                document.removeEventListener('keydown', handleKeydown);
+            };
+
+            document.addEventListener('keydown', handleKeydown);
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // API
@@ -383,18 +459,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let folder = '';
 
         if (folderNames.length > 0) {
-            const choice = await showConfirmModal('Create Note', 'Would you like to create this note inside a folder?');
-            if (choice) {
-                // Create a simple select dialog
-                const folderSelect = folderNames.map((f, i) => `${i + 1}. ${f}`).join(', ');
-                const selection = await showPromptModal('Select Folder', `Enter folder number (${folderSelect}):`);
-                if (selection) {
-                    const index = parseInt(selection) - 1;
-                    if (index >= 0 && index < folderNames.length) {
-                        folder = folderNames[index] + '/';
-                    }
-                }
-            }
+            const selected = await showFolderPickerModal(
+                'Create Note',
+                'Select where to create the note:',
+                folderNames
+            );
+            if (selected === null) return; // cancelled
+            if (selected) folder = selected + '/';
         }
 
         const name = await showPromptModal('New Note', 'Enter note name (without .md):');
@@ -426,7 +497,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Delete note
     async function deleteNote(path = currentNote) {
         if (!path) return;
-        const confirmed = await showConfirmModal('Delete Note', 'Are you sure you want to delete this note? This action cannot be undone.');
+        const confirmed = await showConfirmModal(
+            'Delete Note',
+            'Are you sure you want to delete this note? This action cannot be undone.',
+            { confirmText: 'Delete', cancelText: 'Keep', danger: true }
+        );
         if (!confirmed) return;
 
         try {
@@ -578,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         menu.addEventListener('click', async (ev) => {
             const action = ev.target.closest('.context-menu-item')?.dataset.action;
             if (action === 'create-in-folder') {
-                const name = prompt('Note name (without .md):');
+                const name = await showPromptModal('New Note', `Create note in ${folderPath}/ (without .md):`);
                 if (name) {
                     const path = `${folderPath}/${name}.md`;
                     try {
@@ -683,7 +758,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newPath = targetPath ? `${targetPath}/${fileName}` : fileName;
 
-        const confirmed = await showConfirmModal('Move Note', `Move "${fileName}" to ${targetLabel}?`);
+        const confirmed = await showConfirmModal(
+            'Move Note',
+            `Move "${fileName}" to ${targetLabel}?`,
+            { confirmText: 'Move Here', cancelText: 'Cancel' }
+        );
         if (confirmed) {
             try {
                 const response = await fetch('/admin/api/notes/move', {
@@ -808,7 +887,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function batchDelete() {
-        const confirmed = await showConfirmModal('Delete Notes', `Are you sure you want to delete ${selectedNotes.size} notes? This action cannot be undone.`);
+        const confirmed = await showConfirmModal(
+            'Delete Notes',
+            `Are you sure you want to delete ${selectedNotes.size} notes? This action cannot be undone.`,
+            { confirmText: 'Delete All', cancelText: 'Keep', danger: true }
+        );
         if (!confirmed) return;
 
         for (const path of selectedNotes) {

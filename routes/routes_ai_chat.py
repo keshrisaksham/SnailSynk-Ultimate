@@ -134,15 +134,33 @@ def ai_chat_stream():
         return jsonify(success=False, error="Invalid request. Message is required."), 400
     
     user_message = data['message'].strip()
-    if not user_message:
+    if not user_message and not data.get('images'):
         return jsonify(success=False, error="Message cannot be empty."), 400
     
     history = data.get('history', [])
+    images = data.get('images', [])  # [{ "base64": "...", "mimeType": "image/png" }, ...]
     
     def generate():
         try:
             chat = model.start_chat(history=history)
-            response = chat.send_message(user_message, stream=True)
+            
+            # Build multimodal parts
+            parts = []
+            if user_message:
+                parts.append(user_message)
+            for img in images:
+                parts.append({
+                    "inline_data": {
+                        "mime_type": img.get("mimeType", "image/png"),
+                        "data": img.get("base64", "")
+                    }
+                })
+            
+            # If no text was provided with images, add a default prompt
+            if not user_message and images:
+                parts.insert(0, "Describe this image.")
+            
+            response = chat.send_message(parts, stream=True)
             
             full_response = []
             for chunk in response:

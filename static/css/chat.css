@@ -1181,6 +1181,117 @@ html.dark .bb-code-header {
     opacity: 0.7;
 }
 
+/* ─── Image Upload Button ─────────────────────────────────────────────────── */
+.bb-image-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.bb-image-btn:hover {
+    color: var(--c-primary);
+    background: color-mix(in srgb, var(--c-primary) 8%, transparent);
+    transform: scale(1.05);
+}
+
+.bb-image-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ─── Image Preview Strip ─────────────────────────────────────────────────── */
+.bb-image-preview-strip {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-text-placeholder) transparent;
+}
+
+.bb-image-preview-item {
+    position: relative;
+    flex-shrink: 0;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--c-border);
+    animation: imgPreviewPop 0.2s ease-out;
+}
+
+@keyframes imgPreviewPop {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.bb-image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bb-image-preview-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.bb-image-preview-item:hover .bb-image-preview-remove {
+    opacity: 1;
+}
+
+/* ─── Images in User Messages ─────────────────────────────────────────────── */
+.bb-msg-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.bb-msg-images img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.bb-msg-images img:hover {
+    transform: scale(1.03);
+}
+
 /* ─── Math Rendering ──────────────────────────────────────────────────────── */
 .bb-msg-bubble .katex-display {
     margin: 0.5rem 0;
