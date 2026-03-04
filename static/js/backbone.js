@@ -437,4 +437,152 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.addEventListener('click', handleOverlayClick);
         });
     };
+
+    // --- MOBILE BOTTOM NAVIGATION ---
+    const isMobile = () => window.innerWidth <= 768;
+
+    const mobileBottomNav = document.getElementById('mobileBottomNav');
+    const settingsSheet = document.getElementById('mobileSettingsSheet');
+    const settingsBackdrop = document.getElementById('mobileSettingsBackdrop');
+
+    if (mobileBottomNav) {
+        const navTabs = mobileBottomNav.querySelectorAll('.mobile-nav-tab');
+        const settingsTab = document.getElementById('navTabSettings');
+
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                if (!isMobile()) return;
+
+                // If it's the settings tab, toggle settings sheet
+                if (tab === settingsTab) {
+                    if (settingsSheet) {
+                        settingsSheet.classList.toggle('visible');
+                    }
+                    // Mark active
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    return;
+                }
+
+                // Close settings sheet when navigating
+                if (settingsSheet) settingsSheet.classList.remove('visible');
+
+                // Set active tab
+                navTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Scroll to the target section
+                const targetClass = tab.dataset.target;
+                if (targetClass) {
+                    let targetEl = null;
+                    if (targetClass === 'shared-text-section') {
+                        targetEl = document.querySelector('.shared-text-section');
+                    } else if (targetClass === 'upload-section') {
+                        targetEl = document.querySelector('.upload-section');
+                    } else if (targetClass === 'download-section') {
+                        targetEl = document.querySelector('.download-section');
+                    }
+                    if (targetEl) {
+                        const headerHeight = document.querySelector('.app-header')?.offsetHeight || 56;
+                        const y = targetEl.getBoundingClientRect().top + window.pageYOffset - headerHeight - 8;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+    }
+
+    // Close settings sheet when tapping backdrop
+    if (settingsBackdrop) {
+        settingsBackdrop.addEventListener('click', () => {
+            if (settingsSheet) settingsSheet.classList.remove('visible');
+        });
+    }
+
+    // --- MOBILE SETTINGS: THEME TOGGLE ---
+    const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+    const mobileThemeLabel = mobileThemeToggle?.querySelector('.mobile-theme-label');
+
+    function updateMobileThemeLabel() {
+        if (mobileThemeLabel) {
+            mobileThemeLabel.textContent = document.documentElement.classList.contains('dark') ? 'Dark Mode' : 'Light Mode';
+        }
+    }
+
+    if (mobileThemeToggle) {
+        updateMobileThemeLabel();
+        mobileThemeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateMobileThemeLabel();
+        });
+
+        // Sync with header theme toggle changes
+        if (themeToggle) {
+            const origClickHandler = themeToggle.onclick; // won't work since we used addEventListener
+            // Use MutationObserver to watch for class changes
+            const observer = new MutationObserver(() => updateMobileThemeLabel());
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        }
+    }
+
+    // --- MOBILE SETTINGS: ACCENT PICKER ---
+    const mobileAccentPicker = document.querySelector('.mobile-accent-picker');
+    if (mobileAccentPicker) {
+        const mobileAccentOptions = mobileAccentPicker.querySelectorAll('.accent-option');
+
+        // Set initial active state
+        const currentAccent = localStorage.getItem('accent') || 'red';
+        mobileAccentOptions.forEach(opt => {
+            if (opt.dataset.accent === currentAccent) {
+                opt.classList.add('active');
+            }
+        });
+
+        mobileAccentOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const accent = option.dataset.accent;
+
+                // Remove all accent classes and add the selected one
+                document.documentElement.classList.remove(
+                    'accent-red', 'accent-blue', 'accent-green',
+                    'accent-purple', 'accent-orange', 'accent-black'
+                );
+                document.documentElement.classList.add(`accent-${accent}`);
+
+                // Update active state in BOTH pickers
+                mobileAccentOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+
+                // Sync header accent picker
+                accentOptions.forEach(opt => {
+                    opt.classList.remove('active');
+                    if (opt.dataset.accent === accent) opt.classList.add('active');
+                });
+
+                localStorage.setItem('accent', accent);
+            });
+        });
+    }
+
+    // --- MOBILE SETTINGS: QUICK ACTIONS ---
+    const mobileConnectBtn = document.getElementById('mobileConnectBtn');
+    if (mobileConnectBtn) {
+        mobileConnectBtn.addEventListener('click', () => {
+            if (settingsSheet) settingsSheet.classList.remove('visible');
+            // Trigger the existing connect button click
+            const connectBtn = document.getElementById('connectBtn');
+            if (connectBtn) connectBtn.click();
+        });
+    }
+
+    const mobileCoffeeBtn = document.getElementById('mobileCoffeeBtn');
+    if (mobileCoffeeBtn) {
+        mobileCoffeeBtn.addEventListener('click', () => {
+            if (settingsSheet) settingsSheet.classList.remove('visible');
+            // Trigger the existing coffee button click
+            const coffeeBtn = document.getElementById('coffeeBtn');
+            if (coffeeBtn) coffeeBtn.click();
+        });
+    }
 });

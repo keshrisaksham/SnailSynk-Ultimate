@@ -20,6 +20,11 @@ body:has(.bugbyte-app)>#fullPageDropZone {
     display: none !important;
 }
 
+/* Back button hidden on desktop, shown on mobile via mobile-responsive.css */
+.bb-mobile-back-btn {
+    display: none;
+}
+
 /* ─── Sidebar ─────────────────────────────────────────────────────────────── */
 .bb-sidebar {
     width: 280px;

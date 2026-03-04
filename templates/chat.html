@@ -24,6 +24,14 @@
 
 {% block content %}
 <div class="bugbyte-app" data-is-admin="{{ 'true' if is_admin else 'false' }}">
+    <!-- Mobile back button (visible on mobile only via CSS) -->
+    <a href="{{ url_for('main.index') }}" class="bb-mobile-back-btn" title="Back to SnailSynk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        <span>Back</span>
+    </a>
     {% if is_admin %}
     <!-- Sidebar (admin only) -->
     <aside class="bb-sidebar" id="bbSidebar">
