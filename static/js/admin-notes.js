@@ -91,16 +91,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 resolve('cancel');
             };
 
+            const handleOverlayClick = (e) => {
+                if (e.target === unsavedModal) handleCancel();
+            };
+
             const cleanup = () => {
                 unsavedModal.classList.remove('visible');
                 modalSaveBtn.removeEventListener('click', handleSave);
                 modalDiscardBtn.removeEventListener('click', handleDiscard);
                 modalCancelBtn.removeEventListener('click', handleCancel);
+                unsavedModal.removeEventListener('click', handleOverlayClick);
             };
 
             modalSaveBtn.addEventListener('click', handleSave);
             modalDiscardBtn.addEventListener('click', handleDiscard);
             modalCancelBtn.addEventListener('click', handleCancel);
+            unsavedModal.addEventListener('click', handleOverlayClick);
         });
     }
 
@@ -132,16 +138,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') handleCancel();
             };
 
+            const handleOverlayClick = (e) => {
+                if (e.target === promptModal) handleCancel();
+            };
+
             const cleanup = () => {
                 promptModal.classList.remove('visible');
                 promptConfirmBtn.removeEventListener('click', handleConfirm);
                 promptCancelBtn.removeEventListener('click', handleCancel);
                 promptInput.removeEventListener('keydown', handleKeydown);
+                promptModal.removeEventListener('click', handleOverlayClick);
             };
 
             promptConfirmBtn.addEventListener('click', handleConfirm);
             promptCancelBtn.addEventListener('click', handleCancel);
             promptInput.addEventListener('keydown', handleKeydown);
+            promptModal.addEventListener('click', handleOverlayClick);
         });
     }
 
@@ -182,16 +194,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') handleNo();
             };
 
+            const handleOverlayClick = (e) => {
+                if (e.target === confirmModal) handleNo();
+            };
+
             const cleanup = () => {
                 confirmModal.classList.remove('visible');
                 confirmYesBtn.removeEventListener('click', handleYes);
                 confirmNoBtn.removeEventListener('click', handleNo);
                 document.removeEventListener('keydown', handleKeydown);
+                confirmModal.removeEventListener('click', handleOverlayClick);
             };
 
             confirmYesBtn.addEventListener('click', handleYes);
             confirmNoBtn.addEventListener('click', handleNo);
             document.addEventListener('keydown', handleKeydown);
+            confirmModal.addEventListener('click', handleOverlayClick);
         });
     }
 
@@ -235,12 +253,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') { cleanup(); resolve(null); }
             };
 
+            const handleOverlayClick = (e) => {
+                if (e.target === folderPickerModal) { cleanup(); resolve(null); }
+            };
+
             const cleanup = () => {
                 folderPickerModal.classList.remove('visible');
                 document.removeEventListener('keydown', handleKeydown);
+                folderPickerModal.removeEventListener('click', handleOverlayClick);
             };
 
             document.addEventListener('keydown', handleKeydown);
+            folderPickerModal.addEventListener('click', handleOverlayClick);
         });
     }
 
@@ -418,6 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.note-item').forEach(item => {
                 item.classList.toggle('active', item.dataset.path === path);
             });
+
+            // Switch to editor view on mobile
+            showMobileEditor();
         } catch (error) {
             alert('Failed to load note');
         }
@@ -1053,6 +1080,88 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.ctrlKey && e.key === 's') {
             e.preventDefault();
             if (currentNote) saveNote();
+        }
+    });
+
+    // ===== MOBILE VIEW SWITCHING =====
+    const notesContainer = document.querySelector('.notes-container');
+    const mobileEditorBack = document.getElementById('mobileEditorBack');
+    const mobileMoreBtn = document.getElementById('mobileMoreBtn');
+    const mobileMoreMenu = document.getElementById('mobileMoreMenu');
+
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
+    function showMobileEditor() {
+        if (isMobile() && notesContainer) {
+            notesContainer.classList.add('mobile-editor-active');
+        }
+    }
+
+    function hideMobileEditor() {
+        if (notesContainer) {
+            notesContainer.classList.remove('mobile-editor-active');
+        }
+    }
+
+    // Back button - return to notes list
+    if (mobileEditorBack) {
+        mobileEditorBack.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideMobileEditor();
+        });
+    }
+
+    // Three-dot menu toggle
+    if (mobileMoreBtn && mobileMoreMenu) {
+        mobileMoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileMoreMenu.classList.toggle('visible');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMoreMenu.contains(e.target) && !mobileMoreBtn.contains(e.target)) {
+                mobileMoreMenu.classList.remove('visible');
+            }
+        });
+
+        // Handle menu actions
+        mobileMoreMenu.addEventListener('click', async (e) => {
+            const item = e.target.closest('.mobile-more-item');
+            if (!item) return;
+
+            const action = item.dataset.action;
+            mobileMoreMenu.classList.remove('visible');
+
+            switch (action) {
+                case 'preview':
+                    previewBtn.click();
+                    break;
+                case 'markdown':
+                    markdownBtn.click();
+                    break;
+                case 'download':
+                    await downloadNote();
+                    break;
+                case 'exportPdf':
+                    await exportNoteToPdf();
+                    break;
+                case 'delete':
+                    await deleteNote();
+                    // After deleting, go back to list on mobile
+                    if (isMobile()) hideMobileEditor();
+                    break;
+            }
+        });
+    }
+
+    // Handle window resize (switching between mobile/desktop)
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            // When switching to desktop, remove mobile-active class
+            hideMobileEditor();
         }
     });
 

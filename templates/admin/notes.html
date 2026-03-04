@@ -56,6 +56,13 @@
 
         <div id="editorContainer" class="editor-container" style="display: none;">
             <div class="editor-header">
+                <!-- Mobile back button (hidden on desktop) -->
+                <button id="mobileEditorBack" class="mobile-editor-back" title="Back to notes list">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5" />
+                        <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                </button>
                 <input type="text" id="noteTitle" class="note-title" placeholder="Note Title">
                 <div class="editor-actions">
                     <button id="previewBtn" class="btn" title="Toggle Preview">
@@ -94,6 +101,58 @@
                     </button>
                     <button id="saveBtn" class="btn btn-primary">Save</button>
                     <button id="deleteBtn" class="btn btn-danger">Delete</button>
+                    <!-- Mobile three-dot menu (hidden on desktop) -->
+                    <button id="mobileMoreBtn" class="mobile-editor-more" title="More actions">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="5" r="1" fill="currentColor" />
+                            <circle cx="12" cy="12" r="1" fill="currentColor" />
+                            <circle cx="12" cy="19" r="1" fill="currentColor" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile more menu dropdown (hidden on desktop) -->
+            <div id="mobileMoreMenu" class="mobile-more-menu">
+                <div class="mobile-more-item" data-action="preview">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    Preview
+                </div>
+                <div class="mobile-more-item" data-action="markdown">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7" />
+                        <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2" />
+                        <path d="M8 12h8" />
+                    </svg>
+                    Markdown
+                </div>
+                <div class="mobile-more-item" data-action="download">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download
+                </div>
+                <div class="mobile-more-item" data-action="exportPdf">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <path d="M9 15h6" />
+                        <path d="M9 11h6" />
+                    </svg>
+                    Export PDF
+                </div>
+                <div class="mobile-more-divider"></div>
+                <div class="mobile-more-item danger" data-action="delete">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    </svg>
+                    Delete
                 </div>
             </div>
             <div id="editor"></div>

@@ -542,7 +542,24 @@ document.addEventListener('DOMContentLoaded', () => {
                             return val + ' actions'
                         }
                     }
-                }
+                },
+                responsive: [{
+                    breakpoint: 769,
+                    options: {
+                        chart: {
+                            height: 280
+                        },
+                        legend: {
+                            position: 'bottom',
+                            horizontalAlign: 'left',
+                            fontSize: '12px',
+                            itemMargin: {
+                                horizontal: 8,
+                                vertical: 3
+                            }
+                        }
+                    }
+                }]
             });
             actionTypesChart.render();
         }
